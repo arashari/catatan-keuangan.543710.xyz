@@ -68,6 +68,16 @@ const DEFAULT_CATEGORIES: Category[] = [
 ]
 
 /** Seed default data once, on first run; migrate legacy 'both' categories. */
+async function seedDefaults(): Promise<void> {
+  await db.categories.bulkPut(DEFAULT_CATEGORIES)
+  await db.templates.bulkPut([
+    { id: 't_angkot', name: 'Angkot', amount: 5000, catId: 'c_trans', order: 0 },
+    { id: 't_kopi', name: 'Kopi', amount: 15000, catId: 'c_makan', order: 1 },
+    { id: 't_makan', name: 'Makan Siang', amount: 25000, catId: 'c_makan', order: 2 },
+    { id: 't_pulsa', name: 'Pulsa', amount: 20000, catId: 'c_tagihan', order: 3 },
+  ])
+}
+
 export async function ensureSeeded(): Promise<void> {
   // v1.1: categories no longer support 'both' — fold them into expense
   const legacy = (await db.categories.toArray()).filter((c) => (c.type as string) === 'both')
@@ -77,11 +87,13 @@ export async function ensureSeeded(): Promise<void> {
 
   const count = await db.categories.count()
   if (count > 0) return
-  await db.categories.bulkPut(DEFAULT_CATEGORIES)
-  await db.templates.bulkPut([
-    { id: 't_angkot', name: 'Angkot', amount: 5000, catId: 'c_trans', order: 0 },
-    { id: 't_kopi', name: 'Kopi', amount: 15000, catId: 'c_makan', order: 1 },
-    { id: 't_makan', name: 'Makan Siang', amount: 25000, catId: 'c_makan', order: 2 },
-    { id: 't_pulsa', name: 'Pulsa', amount: 20000, catId: 'c_tagihan', order: 3 },
-  ])
+  await seedDefaults()
+}
+
+/** Factory reset: wipe everything, then restore default categories & shortcuts. */
+export async function resetToDefaults(): Promise<void> {
+  await db.transaction('rw', [db.categories, db.templates, db.transactions], async () => {
+    await Promise.all([db.categories.clear(), db.templates.clear(), db.transactions.clear()])
+  })
+  await seedDefaults()
 }

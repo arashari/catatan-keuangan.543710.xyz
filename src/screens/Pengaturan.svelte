@@ -2,7 +2,7 @@
   import { db, type Category, type CatType, type Template } from '../lib/db'
   import { fmt } from '../lib/format'
   import { t, i18n, setLang } from '../lib/i18n.svelte'
-  import { reloadAll, store, type SettingsPage } from '../lib/store.svelte'
+  import { reloadAll, store, factoryReset, type SettingsPage } from '../lib/store.svelte'
   import { showToast } from '../lib/toast.svelte'
 
   const MENU: Array<{ go: SettingsPage; label: string }> = [
@@ -264,6 +264,10 @@
       <button class:active={i18n.lang === 'id'} onclick={() => setLang('id')}>🇮🇩 Indonesia</button>
       <button class:active={i18n.lang === 'en'} onclick={() => setLang('en')}>🇬🇧 English</button>
     </div>
+
+    <div class="label danger-label" style="margin-top:36px">{t('reset_data')}</div>
+    <p class="muted small" style="margin:0 0 10px">{t('reset_desc')}</p>
+    <button class="btn ghost danger" onclick={() => void factoryReset()}>{t('reset_data')}</button>
   {:else}
     <div class="subhead">
       <button class="subback" onclick={() => go('index')}>‹</button>

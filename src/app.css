@@ -339,6 +339,7 @@ section.pintasan { min-height: 30dvh; }
 .lang-seg button.active { color: #fff; }
 
 .about-text { font-size: 13px; margin-top: 8px; }
+.danger-label { color: var(--expense); }
 
 /* confirmation toast (quick-add) */
 .toast {

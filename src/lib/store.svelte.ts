@@ -1,4 +1,4 @@
-import { db, newTxId, ensureSeeded, type Category, type Template, type Transaction, type TxType } from './db'
+import { db, newTxId, ensureSeeded, resetToDefaults, type Category, type Template, type Transaction, type TxType } from './db'
 import { t } from './i18n.svelte'
 import { fmt } from './format'
 import { showToast } from './toast.svelte'
@@ -143,6 +143,14 @@ export async function deleteTransaction(id: number): Promise<void> {
 }
 
 /** Confirm, delete the tx being edited, then return to the previous screen. */
+/** Factory reset with confirmation; preferences (lang/theme/cut-date) are kept. */
+export async function factoryReset(): Promise<void> {
+  if (!confirm(t('reset_confirm'))) return
+  await resetToDefaults()
+  await reloadAll()
+  showToast('✓ ' + t('reset_done'))
+}
+
 export async function deleteCurrentTx(): Promise<void> {
   if (store.editingId == null) return
   if (!confirm(t('confirm_delete'))) return
