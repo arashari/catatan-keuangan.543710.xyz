@@ -32,7 +32,10 @@
 
 * { box-sizing: border-box; }
 
-button { transition: transform 0.08s ease; }
+button {
+  transition: transform 0.08s ease;
+  touch-action: manipulation; /* no double-tap zoom / ghost clicks */
+}
 button:active { transform: scale(0.96); }
 .fab:active { transform: scale(0.9); }
 

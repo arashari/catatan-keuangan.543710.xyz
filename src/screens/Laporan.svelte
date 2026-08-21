@@ -93,7 +93,12 @@
     anchor = new Date(start.getFullYear(), start.getMonth() + dir, store.cutDate + 1)
   }
 
+  let lastCutChange = 0
   async function changeCut(delta: number): Promise<void> {
+    // swallow duplicate clicks from fast mobile tapping
+    const now = Date.now()
+    if (now - lastCutChange < 130) return
+    lastCutChange = now
     let v = store.cutDate + delta
     if (v > 28) v = 1
     if (v < 1) v = 28

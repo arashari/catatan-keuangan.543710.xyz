@@ -93,7 +93,16 @@ export function cancelInput(): void {
   store.editingId = null
 }
 
+// swallow near-instant duplicate presses (<50ms) — ghost clicks on mobile —
+// while still allowing intentional fast repeats (human floor is ~80ms)
+let lastPressK = ''
+let lastPressT = 0
+
 export function pressKey(k: string): void {
+  const now = Date.now()
+  if (k === lastPressK && now - lastPressT < 50) return
+  lastPressK = k
+  lastPressT = now
   if (k === 'del') {
     store.inputAmount = Math.floor(store.inputAmount / 10)
   } else if (k === 'clear') {
