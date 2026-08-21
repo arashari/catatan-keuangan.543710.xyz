@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fmt, fmtDate } from '../lib/format'
+  import { fmt, fmtDate, toDateInput } from '../lib/format'
   import { t } from '../lib/i18n.svelte'
   import { store, cancelInput, pressKey, saveInput, setType as setInputType, deleteCurrentTx } from '../lib/store.svelte'
 
@@ -9,8 +9,17 @@
     store.categories.filter((c) => c.type === store.inputType),
   )
 
-  function pickDate(e: Event): void {
-    store.inputDate = new Date((e.target as HTMLInputElement).value + 'T12:00:00')
+  let datepick: HTMLInputElement | undefined = $state()
+
+  function openDatePicker(): void {
+    if (!datepick) return
+    datepick.value = toDateInput(store.inputDate.getTime())
+    try { datepick.showPicker() } catch { datepick.click() }
+  }
+
+  function onPickDate(e: Event): void {
+    const v = (e.target as HTMLInputElement).value
+    if (v) store.inputDate = new Date(v + 'T12:00:00')
   }
 
   async function onSave(): Promise<void> {
@@ -48,10 +57,18 @@
 
   <div class="meta-line">
     <span>{t('date')}</span>
-    <label class="date-pick">
-      <input type="date" value={store.inputDate.toISOString().slice(0, 10)} onchange={pickDate} />
+    <button type="button" class="date-pick" onclick={openDatePicker}>
+      <span>📅</span>
       <b>{fmtDate(store.inputDate)}</b>
-    </label>
+      <input
+        bind:this={datepick}
+        type="date"
+        tabindex="-1"
+        aria-hidden="true"
+        value={toDateInput(store.inputDate.getTime())}
+        onchange={onPickDate}
+      />
+    </button>
   </div>
 
   <div class="label">{t('category')}</div>

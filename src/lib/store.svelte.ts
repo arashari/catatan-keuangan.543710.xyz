@@ -38,7 +38,28 @@ export async function initApp(): Promise<void> {
   const s = await db.settings.get('cutDate')
   if (s && typeof s.value === 'number') store.cutDate = s.value
   await reloadAll()
+  handleLaunchIntent()
   store.ready = true
+}
+
+/** Deep-link from PWA app shortcuts (?action=record&type=… or ?screen=…).
+ *  The URL is cleaned afterwards so a reload doesn't re-trigger the action. */
+function handleLaunchIntent(): void {
+  const params = new URLSearchParams(location.search)
+  const action = params.get('action')
+  const screen = params.get('screen')
+  if (!action && !screen) return
+  history.replaceState(null, '', location.pathname)
+
+  if (screen === 'report' || screen === 'trans' || screen === 'data') {
+    store.screen = screen
+    return
+  }
+  if (action === 'record') {
+    const type = params.get('type') === 'income' ? ('income' as const) : ('expense' as const)
+    openNew(new Date(), 'home')
+    setType(type)
+  }
 }
 
 export function catById(id: string): Category | undefined {
@@ -127,7 +148,9 @@ export async function saveInput(): Promise<boolean> {
     catId: store.inputCat,
     note: store.inputNote.trim(),
     ts,
-    created: existing?.created ?? Date.now(),
+    // preserve original creation time when editing; legacy rows fall back to
+    // their business date so edited old transactions don't jump to the top
+    created: existing?.created ?? ts,
   }
   await db.transactions.put(row)
   cancelInput()
