@@ -293,10 +293,19 @@ section.pintasan { min-height: 30dvh; }
   font-size: 12px; font-weight: 700; color: var(--muted);
   text-transform: uppercase; letter-spacing: 0.05em; padding-top: 12px;
 }
-.cat-row { cursor: grab; }
-.cat-row.dragging { opacity: 0.4; }
-.cat-row.over { border-top: 2px solid var(--accent); }
-.grip { color: var(--muted); font-size: 16px; cursor: grab; line-height: 1; }
+.cat-row, .tpl-row { cursor: grab; }
+.cat-row.dragging, .tpl-row.dragging {
+  opacity: 0.9;
+  background: var(--bg);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.cat-row.over, .tpl-row.over { border-top: 2px solid var(--accent); }
+.grip {
+  color: var(--muted); font-size: 16px; cursor: grab; line-height: 1;
+  touch-action: none;
+  user-select: none; -webkit-user-select: none;
+  padding: 10px 8px; margin: -10px -2px -10px -6px;
+}
 .hint-drag { margin: 0 0 6px; }
 
 .lang-seg {

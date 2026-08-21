@@ -65,30 +65,61 @@
     return store.categories.find((c) => c.id === catId)?.emoji ?? '📦'
   }
 
-  // ---- pintasan reorder (drag & drop) ----
-  let dragIdxT: number | null = $state(null)
-  let overIdxT: number | null = $state(null)
+  // ---- reorder via grip drag (pointer-based, works on touch) ----
+  let overIdx = $state<number | null>(null)
 
+  function startDrag(
+    e: PointerEvent,
+    idx: number,
+    count: number,
+    commit: (from: number, to: number) => void,
+  ): void {
+    e.preventDefault()
+    const row = (e.currentTarget as HTMLElement).closest('.item') as HTMLElement
+    const step = Math.max(row.offsetHeight, 40)
+    const y0 = e.clientY
+    row.classList.add('dragging')
+    let target = idx
+
+    function move(ev: PointerEvent): void {
+      ev.preventDefault()
+      const dy = ev.clientY - y0
+      row.style.transform = `translateY(${dy}px)`
+      row.style.zIndex = '5'
+      target = Math.max(0, Math.min(count - 1, idx + Math.round(dy / step)))
+      overIdx = target === idx ? null : target
+    }
+    function finish(): void {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', finish)
+      window.removeEventListener('pointercancel', finish)
+      row.style.transform = ''
+      row.style.zIndex = ''
+      row.classList.remove('dragging')
+      overIdx = null
+      if (target !== idx) commit(idx, target)
+    }
+    window.addEventListener('pointermove', move, { passive: false })
+    window.addEventListener('pointerup', finish)
+    window.addEventListener('pointercancel', finish)
+  }
+
+  // ---- pintasan reorder ----
   async function persistTplOrder(list: Template[]): Promise<void> {
     await db.templates.bulkPut(list.map((x, i) => ({ ...x, order: i })))
     await reloadAll()
   }
 
-  function onDropT(target: number): void {
-    if (dragIdxT === null || dragIdxT === target) return
+  function onDropT(from: number, to: number): void {
     const list = [...store.templates]
-    const [moved] = list.splice(dragIdxT, 1)
-    list.splice(target, 0, moved)
-    dragIdxT = null
-    overIdxT = null
+    const [moved] = list.splice(from, 1)
+    list.splice(to, 0, moved)
     void persistTplOrder(list)
   }
 
   // ---- kategori (drag & drop) ----
   const EMOJI_PALETTE = ['🍜', '🚌', '🛒', '🧾', '🎮', '💊', '💼', '🏠', '📚', '🎁', '☕', '⛽', '📱', '🐾', '✈️', '📦']
 
-  let dragIdx: number | null = $state(null)
-  let overIdx: number | null = $state(null)
   let showCatForm = $state(false)
   let catEditId = $state<string | null>(null)
   let catName_ = $state('')
@@ -130,13 +161,10 @@
     await reloadAll()
   }
 
-  function onDrop(target: number): void {
-    if (dragIdx === null || dragIdx === target) return
+  function onDropCat(from: number, to: number): void {
     const list = [...store.categories]
-    const [moved] = list.splice(dragIdx, 1)
-    list.splice(target, 0, moved)
-    dragIdx = null
-    overIdx = null
+    const [moved] = list.splice(from, 1)
+    list.splice(to, 0, moved)
     void persistOrder(list)
   }
 
@@ -280,18 +308,8 @@
     <p class="muted small hint-drag">⠿ = {i18n.lang === 'id' ? 'seret untuk mengurutkan' : 'drag to reorder'}</p>
     <div class="list">
       {#each store.templates as tpl, idx (tpl.id)}
-        <div
-          class="item tpl-row"
-          class:dragging={dragIdxT === idx}
-          class:over={overIdxT === idx}
-          draggable="true"
-          role="listitem"
-          ondragstart={(e: DragEvent) => { dragIdxT = idx; e.dataTransfer?.setData('text/plain', String(idx)) }}
-          ondragend={() => { dragIdxT = null; overIdxT = null }}
-          ondragover={(e: DragEvent) => { e.preventDefault(); overIdxT = idx }}
-          ondrop={(e: DragEvent) => { e.preventDefault(); onDropT(idx) }}
-        >
-          <span class="grip">⠿</span>
+        <div class="item tpl-row" class:over={overIdx === idx} role="listitem">
+          <span class="grip" role="button" tabindex="-1" aria-label="Drag to reorder" onpointerdown={(e) => startDrag(e, idx, store.templates.length, onDropT)}>⠿</span>
           <span class="ico">{tplCatEmoji(tpl.catId)}</span>
           <span class="meta">
             <span class="n">{tpl.name}</span>
@@ -348,18 +366,8 @@
     <p class="muted small hint-drag">⠿ = {i18n.lang === 'id' ? 'seret untuk mengurutkan' : 'drag to reorder'}</p>
     <div class="list">
       {#each store.categories as c, idx (c.id)}
-        <div
-          class="item cat-row"
-          class:dragging={dragIdx === idx}
-          class:over={overIdx === idx}
-          draggable="true"
-          role="listitem"
-          ondragstart={(e: DragEvent) => { dragIdx = idx; e.dataTransfer?.setData('text/plain', String(idx)) }}
-          ondragend={() => { dragIdx = null; overIdx = null }}
-          ondragover={(e: DragEvent) => { e.preventDefault(); overIdx = idx }}
-          ondrop={(e: DragEvent) => { e.preventDefault(); onDrop(idx) }}
-        >
-          <span class="grip">⠿</span>
+        <div class="item cat-row" class:over={overIdx === idx}>
+          <span class="grip" role="button" tabindex="-1" aria-label="Drag to reorder" onpointerdown={(e) => startDrag(e, idx, store.categories.length, onDropCat)}>⠿</span>
           <span class="ico">{c.emoji}</span>
           <span class="meta">
             <span class="n">{c.name}</span>
