@@ -378,5 +378,6 @@
     </div>
   {:else if store.settingsPage === 'tentang'}
     <p class="muted about-text">{t('about_text')}</p>
+    <p class="muted about-text ver">v{__APP_COMMIT__}</p>
   {/if}
 </main>

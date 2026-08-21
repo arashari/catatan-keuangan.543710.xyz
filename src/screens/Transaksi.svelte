@@ -2,6 +2,7 @@
   import { fmt, fmtDate, weekday, sameDay, toDateInput } from '../lib/format'
   import { t } from '../lib/i18n.svelte'
   import { loadTx, openNew, store } from '../lib/store.svelte'
+  import { swipe } from '../lib/swipe'
 
   let viewDate = $state(new Date())
   let datepick: HTMLInputElement | undefined = $state()
@@ -37,7 +38,7 @@
   }
 </script>
 
-<main class="screen">
+<main class="screen" use:swipe={(dir) => shiftDay(dir)}>
   <div class="row period-row">
     <button class="subback" onclick={() => shiftDay(-1)}>‹</button>
     <div class="period-center">

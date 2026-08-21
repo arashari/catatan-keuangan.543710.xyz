@@ -3,6 +3,7 @@
   import { fmt, fmtRange, fmtShort, dowHeaders, periodFor } from '../lib/format'
   import { t, i18n } from '../lib/i18n.svelte'
   import { store } from '../lib/store.svelte'
+  import { swipe } from '../lib/swipe'
 
   let anchor = $state(new Date())
 
@@ -95,7 +96,7 @@
   const cutOptions = Array.from({ length: 28 }, (_, i) => i + 1)
 </script>
 
-<main class="screen">
+<main class="screen" use:swipe={(dir) => shift(dir)}>
   <h1>{t('report')}</h1>
 
   <div class="cut-row">

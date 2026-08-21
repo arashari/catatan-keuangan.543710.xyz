@@ -292,6 +292,7 @@ h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
 }
 
 .about-text { font-size: 13px; margin-top: 8px; }
+.about-text.ver { font-variant-numeric: tabular-nums; opacity: 0.7; }
 
 /* inline create forms (pintasan / kategori) */
 .form-card {

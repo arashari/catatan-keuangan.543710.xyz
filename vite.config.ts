@@ -1,9 +1,22 @@
 import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Short commit hash baked into the bundle; 'dev' when building outside a repo.
+const COMMIT = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    return 'dev'
+  }
+})()
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_COMMIT__: JSON.stringify(COMMIT),
+  },
   plugins: [
     svelte(),
     VitePWA({
