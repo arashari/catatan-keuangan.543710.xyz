@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { fly } from 'svelte/transition'
+  import { flip } from 'svelte/animate'
   import { fmt, fmtShort, shortDate } from '../lib/format'
   import { t } from '../lib/i18n.svelte'
-  import { db, type Template } from '../lib/db'
-  import { openFromTemplate, loadTx, store, reloadAll } from '../lib/store.svelte'
+  import { db, newTxId, type Template } from '../lib/db'
+  import { loadTx, store, reloadAll } from '../lib/store.svelte'
+  import { showToast } from '../lib/toast.svelte'
   import { initialTheme, toggleTheme, type Theme } from '../lib/theme'
 
   let theme = $state<Theme>(initialTheme())
@@ -21,15 +24,20 @@
     // one-tap record straight from a shortcut
     const cat = store.categories.find((c) => c.id === tpl.catId)
     const type = cat?.type ?? ('expense' as const)
+    const now = new Date()
+    // same normalization as the input form: noon of the selected day
+    const ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12).getTime()
     await db.transactions.add({
-      id: Date.now(),
+      id: newTxId(),
       type,
       amount: tpl.amount,
       catId: tpl.catId,
       note: tpl.name,
-      ts: Date.now(),
+      ts,
+      created: Date.now(),
     })
     await reloadAll()
+    showToast('✓ ' + tpl.name + ' · ' + fmt(tpl.amount))
   }
 </script>
 
@@ -51,7 +59,7 @@
     <div class="label">{t('pintasan')}</div>
     <div class="chips">
       {#each store.templates as tpl (tpl.id)}
-        <button class="chip" onclick={() => openFromTemplate(tpl, 'home')}>
+        <button class="chip" onclick={() => quickAdd(tpl)}>
           <span>{catEmoji(tpl.catId)}</span>
           <span>{tpl.name}</span>
           <span class="amt">{fmtShort(tpl.amount)}</span>
@@ -66,7 +74,7 @@
     <div class="label">{t('recent')}</div>
     <div class="list">
       {#each store.transactions.slice(0, 8) as tx (tx.id)}
-        <button class="tx" onclick={() => loadTx(tx, 'home')}>
+        <button class="tx" animate:flip={{ duration: 250 }} in:fly={{ y: -12, duration: 220 }} onclick={() => loadTx(tx, 'home')}>
           <span class="ico">{catEmoji(tx.catId)}</span>
           <span class="meta">
             <span class="n">{tx.note || catName(tx.catId)}</span>

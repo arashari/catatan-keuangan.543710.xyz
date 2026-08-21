@@ -3,6 +3,7 @@
   import { fmt } from '../lib/format'
   import { t, i18n, setLang } from '../lib/i18n.svelte'
   import { reloadAll, store, type SettingsPage } from '../lib/store.svelte'
+  import { showToast } from '../lib/toast.svelte'
 
   const MENU: Array<{ go: SettingsPage; label: string }> = [
     { go: 'ekspor', label: 'export_import' },
@@ -47,12 +48,14 @@
     })
     await reloadAll()
     showTplForm = false
+    showToast('✓ ' + t(tplEditId ? 'tpl_updated' : 'tpl_created'))
   }
 
   async function delTpl(id: string): Promise<void> {
     if (!confirm(t('tpl_delete'))) return
     await db.templates.delete(id)
     await reloadAll()
+    showToast('✓ ' + t('tpl_deleted'))
   }
 
   function tplCatName(catId: string): string {
@@ -119,6 +122,7 @@
     })
     await reloadAll()
     showCatForm = false
+    showToast('✓ ' + t(catEditId ? 'cat_updated' : 'cat_created'))
   }
 
   async function persistOrder(list: Category[]): Promise<void> {
@@ -142,6 +146,7 @@
     await db.categories.delete(id)
     await reloadAll()
     await persistOrder(store.categories) // renumber after delete
+    showToast('✓ ' + t('cat_deleted'))
   }
 
   // ---- ekspor / impor ----
@@ -225,10 +230,11 @@
       {/each}
     </div>
 
-    <div class="label">{t('lang')}</div>
-    <div class="lang-row">
-      <button class:langactive={i18n.lang === 'id'} onclick={() => setLang('id')}>Indonesia</button>
-      <button class:langactive={i18n.lang === 'en'} onclick={() => setLang('en')}>English</button>
+    <div class="label" style="margin-top:36px">{t('lang')}</div>
+    <div class="lang-seg" style="margin-top:10px" class:right={i18n.lang === 'en'}>
+      <span class="thumb"></span>
+      <button class:active={i18n.lang === 'id'} onclick={() => setLang('id')}>🇮🇩 Indonesia</button>
+      <button class:active={i18n.lang === 'en'} onclick={() => setLang('en')}>🇬🇧 English</button>
     </div>
   {:else}
     <div class="subhead">

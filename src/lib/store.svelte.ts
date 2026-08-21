@@ -1,5 +1,7 @@
-import { db, ensureSeeded, type Category, type Template, type Transaction, type TxType } from './db'
+import { db, newTxId, ensureSeeded, type Category, type Template, type Transaction, type TxType } from './db'
 import { t } from './i18n.svelte'
+import { fmt } from './format'
+import { showToast } from './toast.svelte'
 
 export type Screen = 'home' | 'trans' | 'report' | 'data'
 export type InputRet = 'home' | 'trans'
@@ -27,7 +29,8 @@ export const store = $state({
 export async function reloadAll(): Promise<void> {
   store.categories = await db.categories.orderBy('order').toArray()
   store.templates = await db.templates.orderBy('order').toArray()
-  store.transactions = (await db.transactions.toArray()).sort((a, b) => b.ts - a.ts)
+  store.transactions = (await db.transactions.toArray())
+    .sort((a, b) => b.ts - a.ts || (b.created ?? b.id) - (a.created ?? a.id))
 }
 
 export async function initApp(): Promise<void> {
@@ -103,25 +106,30 @@ export function pressKey(k: string): void {
 export async function saveInput(): Promise<boolean> {
   if (!store.inputAmount) { alert(t('alert_amount')); return false }
   if (!store.inputCat) { alert(t('alert_category')); return false }
+  const editingId = store.editingId
+  const existing = editingId != null ? await db.transactions.get(editingId) : undefined
   const d = store.inputDate
   // noon to be safe across DST/timezone shifts
   const ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0).getTime()
   const row: Transaction = {
-    id: store.editingId ?? Date.now(),
+    id: editingId ?? newTxId(),
     type: store.inputType,
     amount: store.inputAmount,
     catId: store.inputCat,
     note: store.inputNote.trim(),
     ts,
+    created: existing?.created ?? Date.now(),
   }
   await db.transactions.put(row)
   cancelInput()
   await reloadAll()
+  showToast(existing ? '✓ ' + t('tx_updated') : '✓ ' + t('tx_created') + ' · ' + fmt(row.amount))
   return true
 }
 
 export async function deleteTransaction(id: number): Promise<void> {
   await db.transactions.delete(id)
+  showToast('✓ ' + t('tx_deleted'))
   await reloadAll()
 }
 
@@ -135,4 +143,5 @@ export async function deleteCurrentTx(): Promise<void> {
   // make sure the revealed screen matches where the user came from
   store.screen = ret === 'trans' ? 'trans' : 'home'
   await reloadAll()
+  showToast('✓ ' + t('tx_deleted'))
 }

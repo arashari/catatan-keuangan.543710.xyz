@@ -26,7 +26,10 @@ export interface Transaction {
   amount: number
   catId: string
   note: string
-  ts: number // epoch ms
+  /** Business date (normalized to noon of the selected day). */
+  ts: number
+  /** Wall-clock creation time — used to order same-day entries. */
+  created?: number
 }
 
 export interface Setting {
@@ -47,6 +50,11 @@ db.version(1).stores({
   transactions: 'id, ts, catId',
   settings: 'key',
 })
+
+/** Millisecond-precision numeric id that survives rapid successive calls. */
+export function newTxId(): number {
+  return Date.now() * 100 + Math.floor(Math.random() * 100)
+}
 
 const DEFAULT_CATEGORIES: Category[] = [
   { id: 'c_makan', name: 'Makanan', emoji: '🍜', type: 'expense', order: 0 },

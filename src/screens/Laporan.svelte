@@ -141,7 +141,7 @@
   </div>
 
   <div class="repbars">
-    {#each catBars as bar (bar.id)}
+    {#each catBars as bar (bar.id + label)}
       <div class="rep-bar">
         <span class="nm">{bar.emoji} {bar.name}</span>
         <span class="track"><span class="fill" style="width:{bar.pct}%"></span></span>

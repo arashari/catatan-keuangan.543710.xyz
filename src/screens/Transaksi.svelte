@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fly } from 'svelte/transition'
+  import { flip } from 'svelte/animate'
   import { fmt, fmtDate, weekday, sameDay, toDateInput } from '../lib/format'
   import { t } from '../lib/i18n.svelte'
   import { loadTx, openNew, store } from '../lib/store.svelte'
@@ -10,7 +12,7 @@
   const dayTx = $derived(
     store.transactions
       .filter((x) => sameDay(new Date(x.ts), viewDate))
-      .sort((a, b) => b.ts - a.ts),
+      .sort((a, b) => b.ts - a.ts || (b.created ?? b.id) - (a.created ?? a.id)),
   )
 
   function shiftDay(dir: number): void {
@@ -56,7 +58,7 @@
 
   <div class="list">
     {#each dayTx as tx (tx.id)}
-      <button class="tx" onclick={() => loadTx(tx, 'trans')}>
+      <button class="tx" animate:flip={{ duration: 250 }} in:fly={{ y: -12, duration: 220 }} onclick={() => loadTx(tx, 'trans')}>
         <span class="ico">{catEmoji(tx.catId)}</span>
         <span class="meta">
           <span class="n">{tx.note || catName(tx.catId)}</span>

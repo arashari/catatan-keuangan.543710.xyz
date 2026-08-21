@@ -1,10 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+import { fly } from 'svelte/transition'
+import { cubicOut } from 'svelte/easing'
   import Home from './screens/Home.svelte'
   import Transaksi from './screens/Transaksi.svelte'
   import Laporan from './screens/Laporan.svelte'
   import Pengaturan from './screens/Pengaturan.svelte'
   import InputScreen from './screens/InputScreen.svelte'
+  import Toast from './lib/Toast.svelte'
   import { initApp, store, type Screen } from './lib/store.svelte'
   import { t } from './lib/i18n.svelte'
   import { applyTheme, initialTheme } from './lib/theme'
@@ -22,15 +25,19 @@
 
 {#if store.ready}
   <div class="app" class:nav-hidden={store.inputOpen}>
-    {#if store.screen === 'home'}
-      <Home />
-    {:else if store.screen === 'trans'}
-      <Transaksi />
-    {:else if store.screen === 'report'}
-      <Laporan />
-    {:else}
-      <Pengaturan />
-    {/if}
+    {#key store.screen}
+      <div class="screen-anim" in:fly={{ y: 14, duration: 180, easing: cubicOut }}>
+        {#if store.screen === 'home'}
+          <Home />
+        {:else if store.screen === 'trans'}
+          <Transaksi />
+        {:else if store.screen === 'report'}
+          <Laporan />
+        {:else}
+          <Pengaturan />
+        {/if}
+      </div>
+    {/key}
 
     <nav class="bottomnav">
       {#each NAV as n (n.id)}
@@ -42,10 +49,12 @@
   </div>
 
   {#if store.inputOpen}
-    <div class="overlay">
+    <div class="overlay" transition:fly={{ y: '100%', duration: 240, easing: cubicOut }}>
       <InputScreen />
     </div>
   {/if}
 {:else}
   <main class="screen center"><p class="muted">…</p></main>
 {/if}
+
+<Toast />
