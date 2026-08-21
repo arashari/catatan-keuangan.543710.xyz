@@ -1,7 +1,7 @@
 <script lang="ts">
   import { db } from '../lib/db'
   import { fmt, fmtRange, fmtShort, dowHeaders, periodFor } from '../lib/format'
-  import { t, i18n } from '../lib/i18n.svelte'
+  import { t } from '../lib/i18n.svelte'
   import { store } from '../lib/store.svelte'
   import { swipe } from '../lib/swipe'
 
@@ -20,6 +20,12 @@
   }
 
   const label = $derived(fmtRange(period().start, period().end))
+
+  const isCurrent = $derived.by(() => {
+    const { start, end } = period()
+    const now = Date.now()
+    return now >= start.getTime() && now <= end.getTime()
+  })
 
   const sums = $derived.by(() => {
     const { start, end } = period()
@@ -87,31 +93,40 @@
     anchor = new Date(start.getFullYear(), start.getMonth() + dir, store.cutDate + 1)
   }
 
-  async function changeCut(e: Event): Promise<void> {
-    const v = parseInt((e.target as HTMLSelectElement).value, 10)
+  async function changeCut(delta: number): Promise<void> {
+    let v = store.cutDate + delta
+    if (v > 28) v = 1
+    if (v < 1) v = 28
     store.cutDate = v
     await db.settings.put({ key: 'cutDate', value: v })
   }
 
-  const cutOptions = Array.from({ length: 28 }, (_, i) => i + 1)
 </script>
 
 <main class="screen" use:swipe={(dir) => shift(dir)}>
   <h1>{t('report')}</h1>
-
   <div class="cut-row">
     <span class="muted">{t('cut_date_label')}</span>
-    <select value={store.cutDate} onchange={changeCut}>
-      {#each cutOptions as n (n)}
-        <option value={n}>{i18n.lang === 'id' ? 'Tanggal' : 'Day'} {n}</option>
-      {/each}
-    </select>
+    <div class="stepper">
+      <button class="subback" onclick={() => changeCut(-1)}>‹</button>
+      <b>{store.cutDate}</b>
+      <button class="subback" onclick={() => changeCut(1)}>›</button>
+    </div>
   </div>
 
   <div class="row period-row">
+    <button class="subback" title="-1 tahun" onclick={() => shift(-12)}>«</button>
     <button class="subback" onclick={() => shift(-1)}>‹</button>
-    <div class="period-center"><div class="range">{label}</div></div>
+    <div class="period-center">
+      <button
+        class="range"
+        data-now={isCurrent}
+        title={t('today')}
+        onclick={() => (anchor = new Date())}
+      >{label}</button>
+    </div>
     <button class="subback" onclick={() => shift(1)}>›</button>
+    <button class="subback" title="+1 tahun" onclick={() => shift(12)}>»</button>
   </div>
 
   <div class="bignum">
@@ -125,7 +140,6 @@
     </div>
   </div>
 
-  <div class="label">{t('by_category')}</div>
   <div class="repbars">
     {#each catBars as bar (bar.id)}
       <div class="rep-bar">
@@ -138,7 +152,6 @@
     {/each}
   </div>
 
-  <div class="label">{t('calendar')}</div>
   <div class="cal">
     {#each dowHeaders() as d (d)}
       <div class="dow">{d}</div>

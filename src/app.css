@@ -211,13 +211,19 @@ section.pintasan { min-height: 30dvh; }
   border: 0; background: none; color: var(--ink);
   font-size: 16px; font-weight: 700; cursor: pointer;
 }
-.range { font-size: 15px; font-weight: 700; }
+.range {
+  border: 0; background: none; color: var(--ink); font: inherit;
+  font-size: 15px; font-weight: 700; cursor: pointer; padding: 4px 8px;
+}
+.range:not([data-now='true']) { text-decoration: underline dotted var(--muted); }
 
 .cut-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.cut-row select {
-  border: 1px solid var(--line); background: var(--chip); color: var(--ink);
-  border-radius: 10px; padding: 7px 10px; font-size: 13px; outline: none;
+.stepper {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--chip); border-radius: 999px; padding: 2px;
 }
+.stepper .subback { font-size: 18px; padding: 4px 10px; }
+.stepper b { min-width: 34px; text-align: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 
 /* report numbers */
 .bignum { text-align: center; padding: 6px 0 2px; }
@@ -228,7 +234,7 @@ section.pintasan { min-height: 30dvh; }
 .bignum .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
 /* category bars */
-.repbars { display: flex; flex-direction: column; gap: 10px; }
+.repbars { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
 .rep-bar { display: flex; align-items: center; gap: 10px; font-size: 13px; }
 .rep-bar .nm { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rep-bar .track { flex: 1; height: 8px; background: var(--chip); border-radius: 99px; overflow: hidden; }
@@ -236,7 +242,7 @@ section.pintasan { min-height: 30dvh; }
 .rep-bar .amt { font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* calendar */
-.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 24px; }
 .cal .dow { font-size: 10px; color: var(--muted); text-align: center; padding: 4px 0; }
 .cal .cell {
   border: 1px solid var(--line); border-radius: 10px;
