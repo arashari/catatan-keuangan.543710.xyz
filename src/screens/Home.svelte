@@ -36,7 +36,6 @@
 <main class="screen">
   <div class="row head">
     <div>
-      <h1>{t('nav_home')}</h1>
       <div class="muted">{t('balance')}</div>
       <div class="balance">{fmt(income - expense)}</div>
       <div class="muted small">
@@ -48,7 +47,7 @@
     </button>
   </div>
 
-  <section>
+  <section class="pintasan">
     <div class="label">{t('pintasan')}</div>
     <div class="chips">
       {#each store.templates as tpl (tpl.id)}

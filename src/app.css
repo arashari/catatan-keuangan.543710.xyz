@@ -72,13 +72,16 @@ h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
 }
 
 /* chips (pintasan) */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+
+section.pintasan { min-height: 30dvh; }
 .chip {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 10px;
   border: 1px solid var(--line); background: var(--chip); color: var(--ink);
-  border-radius: 999px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+  border-radius: 999px; padding: 14px 18px; font-size: 15px; cursor: pointer;
 }
-.chip .amt { color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip > :first-child { font-size: 20px; }
+.chip .amt { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 
 /* transaction rows */
 .list { display: flex; flex-direction: column; }
