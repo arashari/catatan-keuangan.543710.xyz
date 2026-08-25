@@ -85,6 +85,33 @@ export async function ensureSeeded(): Promise<void> {
     await db.categories.bulkPut(legacy.map((c) => ({ ...c, type: 'expense' as CatType })))
   }
 
+  // v1.1: backfill `created` for transactions made before the field existed.
+  // ids are Date.now()*100+rand, so id/100 recovers the original timestamp.
+  const noCreated = (await db.transactions.toArray()).filter((x) => x.created == null)
+  if (noCreated.length) {
+    await db.transactions.bulkPut(
+      noCreated.map((x) => ({ ...x, created: Math.round(x.id / 100) })),
+    )
+  }
+
+  // v1.2: normalize every ts to noon of its own day so same-day order
+  // is decided purely by `created`, regardless of how the row was made
+  const unnormalized = (await db.transactions.toArray()).filter((x) => {
+    const d = new Date(x.ts)
+    return d.getHours() !== 12 || d.getMinutes() !== 0
+  })
+  if (unnormalized.length) {
+    await db.transactions.bulkPut(
+      unnormalized.map((x) => {
+        const d = new Date(x.ts)
+        return {
+          ...x,
+          ts: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTime(),
+        }
+      }),
+    )
+  }
+
   const count = await db.categories.count()
   if (count > 0) return
   await seedDefaults()
