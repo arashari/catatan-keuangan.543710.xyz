@@ -32,6 +32,17 @@
     try { datepick.showPicker() } catch { datepick.click() }
   }
 
+  const daySum = $derived(
+    dayTx.reduce(
+      (acc, x) => {
+        if (x.type === 'expense') acc.exp += x.amount
+        else acc.inc += x.amount
+        return acc
+      },
+      { inc: 0, exp: 0 },
+    ),
+  )
+
   function catEmoji(id: string): string {
     return store.categories.find((c) => c.id === id)?.emoji ?? '📦'
   }
@@ -54,6 +65,13 @@
       />
     </div>
     <button class="subback" onclick={() => shiftDay(1)}>›</button>
+  </div>
+
+  <div class="bignum">
+    <div class="io-row">
+      <div><div class="v inc">{fmt(daySum.inc)}</div><div class="l">{t('in')}</div></div>
+      <div><div class="v exp">{fmt(daySum.exp)}</div><div class="l">{t('out')}</div></div>
+    </div>
   </div>
 
   <div class="list">
