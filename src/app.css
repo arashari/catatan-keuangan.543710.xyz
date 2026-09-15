@@ -270,6 +270,10 @@ section.pintasan { min-height: 30dvh; }
 .cal .cell .dn { font-weight: 600; font-size: 11px; }
 .cal .cell .inc { color: var(--income); font-size: 9px; line-height: 1.15; }
 .cal .cell .exp { color: var(--expense); font-size: 9px; line-height: 1.15; }
+.cal .cell .csiklus {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0 1px;
+  font-size: 10px; line-height: 1.1; margin-top: 1px;
+}
 
 /* settings menu & items */
 .menu { display: flex; flex-direction: column; }
@@ -299,13 +303,13 @@ section.pintasan { min-height: 30dvh; }
 .del-btn, .row-btn {
   border: 0; background: none; font-size: 16px; cursor: pointer; opacity: 0.75;
 }
-.cat-row, .tpl-row { cursor: grab; }
-.cat-row.dragging, .tpl-row.dragging {
+.cat-row, .tpl-row, .siklus-row { cursor: grab; }
+.cat-row.dragging, .tpl-row.dragging, .siklus-row.dragging {
   opacity: 0.9;
   background: var(--bg);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
-.cat-row.over, .tpl-row.over { border-top: 2px solid var(--accent); }
+.cat-row.over, .tpl-row.over, .siklus-row.over { border-top: 2px solid var(--accent); }
 .grip {
   color: var(--muted); font-size: 16px; cursor: grab; line-height: 1;
   touch-action: none;
@@ -313,6 +317,31 @@ section.pintasan { min-height: 30dvh; }
   padding: 10px 8px; margin: -10px -2px -10px -6px;
 }
 .hint-drag { margin: 0 0 6px; }
+
+/* siklus — recurring purchase tracking */
+.skl {
+  border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 14px; margin-bottom: 10px;
+}
+.skl.due { border-color: var(--expense); background: var(--chip); }
+.skl-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.skl-top .n { font-size: 14px; font-weight: 700; }
+.skl .pill {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent); white-space: nowrap;
+}
+.skl .pill.late { background: none; border: 1px solid var(--expense); color: var(--expense); }
+.skl-next { font-size: 13px; font-weight: 600; margin-top: 5px; }
+.skl-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.skl-note { font-size: 12px; color: var(--muted); margin-top: 5px; font-style: italic; }
+
+/* siklus tag picker in the input form */
+.stagrow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.stag {
+  border: 1px solid var(--line); background: none; color: var(--ink);
+  border-radius: 999px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+}
+.stag.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
 .lang-seg {
   position: relative;

@@ -19,14 +19,19 @@ and imports are plain files you control.
 - **Laporan (Report)** — configurable **cut-off date** (a "month" can run from
   the 25th to the 24th, like a payroll period). Navigate periods by month or
   year, see balance/in/out, an expense bar chart by category, and a calendar
-  with per-day amounts.
+  with per-day amounts plus the emoji of every siklus tagged that day.
+- **Siklus** — its own tab. Track purchases whose *last* date is worth knowing
+  (galon air, cukur rambut, token listrik). Tag a purchase with a siklus, either
+  from the input form or by tapping a shortcut that has one pre-set, and the tab
+  shows when it's next expected. See [Siklus](#siklus) below.
 - **Input** — expense/income switch, numeric keypad, date, category, optional
-  note, save and delete.
+  **siklus** tag, optional note, save and delete.
 - **Pengaturan (Settings)**
   - Export to **CSV** (spreadsheets) or **JSON** (full backup)
   - Import a JSON backup (replaces all local data)
-  - Manage **shortcuts** — add, edit, delete, drag to reorder
+  - Manage **shortcuts** — add, edit, delete, drag to reorder, optional siklus
   - Manage **categories** — custom emoji, expense/income type, drag to reorder
+  - Manage **siklus** — name, emoji, add/edit/delete, drag to reorder
   - Reset data back to defaults
   - Language: **Indonesian / English**
 
@@ -53,7 +58,8 @@ src/
     db.ts                 # Dexie schema, default seed data, migrations, reset
     store.svelte.ts       # global reactive state + all mutations/actions
     i18n.svelte.ts        # id/en dictionaries and `t()`
-    format.ts             # currency, date, and cut-off period helpers
+    format.ts             # currency, date, cut-off period, and duration helpers
+    siklus.ts             # pure stats engine for recurring purchases
     theme.ts              # light/dark persistence
     toast.svelte.ts       # transient confirmation toasts
     swipe.ts              # touch swipe action for day/period navigation
@@ -61,8 +67,9 @@ src/
     Home.svelte           # balance, shortcuts, recent list
     Transaksi.svelte      # per-day transactions
     Laporan.svelte        # periodic report + calendar
+    Siklus.svelte         # recurring purchase tracker
     InputScreen.svelte    # add/edit form
-    Pengaturan.svelte     # settings, exports, shortcuts, categories
+    Pengaturan.svelte     # settings, exports, siklus/shortcuts/categories
 ```
 
 ## Getting started
@@ -83,18 +90,60 @@ npm run dev      # http://localhost:5173
 
 ## Data model
 
-Stored in the IndexedDB database `catatan-keuangan` (four tables):
+Stored in the IndexedDB database `catatan-keuangan` (five tables):
 
 - `categories` — `{ id, name, emoji, type: 'expense' | 'income', order }`
-- `templates` — shortcuts: `{ id, name, amount, catId, order }`
-- `transactions` — `{ id, type, amount, catId, note, ts, created }`.
+- `templates` — shortcuts: `{ id, name, amount, catId, siklusId?, order }`.
+  `siklusId` is the siklus this shortcut pre-tags when tapped.
+- `transactions` — `{ id, type, amount, catId, note, ts, created, siklusId? }`.
   `ts` is normalized to **noon of the business day** so ordering within a day is
   decided purely by `created` (the wall-clock time the entry was made).
+- `siklus` — `{ id, name, emoji, order }`
 - `settings` — key/value, currently just `cutDate`
 
 Default categories and a few shortcuts are seeded on first run. `ensureSeeded()`
 in `src/lib/db.ts` also runs one-off migrations (legacy `both` categories,
 backfilling `created`, re-normalizing `ts`).
+
+### Schema versioning
+
+The database is at version 2 (version 1 + the `siklus` store). Each version's
+`stores()` re-declares **every** store, so an upgrade can never drop one, and no
+`.upgrade()` callback touches existing rows. `siklusId` is unindexed, so it
+needed no version bump — old rows simply lack the field and read as untagged.
+Old JSON backups import fine: a missing `siklus` array just means nothing is
+tagged.
+
+## Siklus
+
+For purchases where the *interval* carries information — galon air, cukur
+rambut, token listrik — a **siklus** is a tag you put on the transaction. A
+siklus is independent of shortcuts: a shortcut may pre-set one, but not every
+shortcut is a siklus.
+
+Everything shown is **derived** from tagged transactions, so it can't go stale —
+editing or deleting a purchase immediately corrects the estimate. Per siklus the
+app computes:
+
+- **Interval** — the *median* gap between purchases (not the mean, which one long
+gap would wreck), over the last 6 occurrences. Two purchases on the same day
+count as one restock.
+- **Next date** — last purchase + interval, plus a countdown or an overdue
+  marker.
+- **Estimated amount** — the median amount paid.
+- **Last-cycle deviation** — the most recent gap vs. the typical one, e.g.
+  "siklus terakhir lebih cepat 4 hari". For irregular items like token listrik
+  this is the useful signal: it usually lasts N days, so a shorter cycle is a
+  nudge to check for extra usage. It needs at least three distinct days to mean
+  anything — with a single interval the gap *is* the median.
+
+With only one recorded purchase there is no interval, and the card says so
+rather than inventing a date. A siklus with no tagged transactions shows
+nowhere. Deleting a siklus untags shortcuts but leaves transactions intact.
+
+Siklus are managed in **Pengaturan → Siklus** (name + emoji, drag to reorder);
+the **Siklus** tab is the read-only view of the stats above. The report calendar
+marks each day with the emoji of any siklus tagged that day.
 
 ## PWA
 

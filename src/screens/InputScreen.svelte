@@ -81,6 +81,20 @@
     {/each}
   </div>
 
+  {#if store.siklus.length}
+    <div class="label">{t('siklus_field')}</div>
+    <div class="stagrow">
+      {#each store.siklus as s (s.id)}
+        <button
+          class="stag"
+          class:active={store.inputSiklusId === s.id}
+          onclick={() => (store.inputSiklusId = store.inputSiklusId === s.id ? null : s.id)}>
+          {s.emoji} {s.name}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   <input class="note" type="text" placeholder={t('note_placeholder')} bind:value={store.inputNote} />
 
   <button class="btn" onclick={onSave}>{t('save')}</button>

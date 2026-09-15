@@ -1,17 +1,18 @@
-import { db, newTxId, ensureSeeded, resetToDefaults, type Category, type Template, type Transaction, type TxType } from './db'
+import { db, newTxId, ensureSeeded, resetToDefaults, type Category, type Siklus, type Template, type Transaction, type TxType } from './db'
 import { t } from './i18n.svelte'
 import { fmt } from './format'
 import { showToast } from './toast.svelte'
 
-export type Screen = 'home' | 'trans' | 'report' | 'data'
+export type Screen = 'home' | 'trans' | 'report' | 'siklus' | 'data'
 export type InputRet = 'home' | 'trans'
-export type SettingsPage = 'index' | 'pintasan' | 'pintasan-form' | 'kategori' | 'kategori-form' | 'ekspor' | 'tentang'
+export type SettingsPage = 'index' | 'pintasan' | 'pintasan-form' | 'kategori' | 'kategori-form' | 'siklus' | 'siklus-form' | 'ekspor' | 'tentang'
 
 export const store = $state({
   ready: false,
   screen: 'home' as Screen,
   categories: [] as Category[],
   templates: [] as Template[],
+  siklus: [] as Siklus[],
   transactions: [] as Transaction[],
   cutDate: 1,
   settingsPage: 'index' as SettingsPage,
@@ -23,12 +24,14 @@ export const store = $state({
   inputAmount: 0,
   inputType: 'expense' as TxType,
   inputCat: null as string | null,
+  inputSiklusId: null as string | null,
   inputNote: '',
 })
 
 export async function reloadAll(): Promise<void> {
   store.categories = await db.categories.orderBy('order').toArray()
   store.templates = await db.templates.orderBy('order').toArray()
+  store.siklus = await db.siklus.orderBy('order').toArray()
   store.transactions = (await db.transactions.toArray())
     .sort((a, b) => b.ts - a.ts || (b.created ?? b.id) - (a.created ?? a.id))
 }
@@ -51,7 +54,7 @@ function handleLaunchIntent(): void {
   if (!action && !screen) return
   history.replaceState(null, '', location.pathname)
 
-  if (screen === 'report' || screen === 'trans' || screen === 'data') {
+  if (screen === 'report' || screen === 'trans' || screen === 'siklus' || screen === 'data') {
     store.screen = screen
     return
   }
@@ -80,6 +83,7 @@ export function openNew(date: Date, ret: InputRet): void {
   store.inputAmount = 0
   store.inputNote = ''
   store.inputCat = null
+  store.inputSiklusId = null
   setType('expense')
   store.inputOpen = true
 }
@@ -93,6 +97,7 @@ export function openFromTemplate(tpl: Template, ret: InputRet): void {
   store.inputAmount = tpl.amount
   store.inputNote = ''
   store.inputCat = tpl.catId
+  store.inputSiklusId = tpl.siklusId ?? null
   setType(c ? c.type : 'expense')
   store.inputOpen = true
 }
@@ -105,6 +110,7 @@ export function loadTx(tx: Transaction, ret: InputRet): void {
   store.inputAmount = tx.amount
   store.inputNote = tx.note
   store.inputCat = tx.catId
+  store.inputSiklusId = tx.siklusId ?? null
   setType(tx.type)
   store.inputOpen = true
 }
@@ -152,6 +158,7 @@ export async function saveInput(): Promise<boolean> {
     // their business date so edited old transactions don't jump to the top
     created: existing?.created ?? ts,
   }
+  if (store.inputSiklusId) row.siklusId = store.inputSiklusId
   await db.transactions.put(row)
   cancelInput()
   await reloadAll()

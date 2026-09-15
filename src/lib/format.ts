@@ -57,6 +57,39 @@ export function dowHeaders(): string[] {
   return DOW[i18n.lang]
 }
 
+/** Duration phrases carry their own word order per language. */
+export function fmtDaysAgo(n: number): string {
+  if (i18n.lang === 'id') return n + ' hari lalu'
+  return n === 1 ? '1 day ago' : n + ' days ago'
+}
+
+export function fmtInDays(n: number): string {
+  if (i18n.lang === 'id') return n + ' hari lagi'
+  return n === 1 ? 'in 1 day' : 'in ' + n + ' days'
+}
+
+/** "tiap 8 hari" / "every 8 days" */
+export function fmtEvery(n: number): string {
+  if (i18n.lang === 'id') return 'tiap ' + n + ' hari'
+  return n === 1 ? 'every day' : 'every ' + n + ' days'
+}
+
+export function fmtLate(n: number): string {
+  if (i18n.lang === 'id') return 'terlambat ' + n + ' hari'
+  return n === 1 ? '1 day late' : n + ' days late'
+}
+
+/** Last cycle was shorter than usual — the "extra usage?" signal. */
+export function fmtFaster(n: number): string {
+  if (i18n.lang === 'id') return 'siklus terakhir lebih cepat ' + n + ' hari'
+  return n === 1 ? 'last cycle was 1 day faster' : 'last cycle was ' + n + ' days faster'
+}
+
+export function fmtSlower(n: number): string {
+  if (i18n.lang === 'id') return 'siklus terakhir lebih lambat ' + n + ' hari'
+  return n === 1 ? 'last cycle was 1 day slower' : 'last cycle was ' + n + ' days slower'
+}
+
 export function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }

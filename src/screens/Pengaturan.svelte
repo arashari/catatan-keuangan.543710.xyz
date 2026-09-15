@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { db, type Category, type CatType, type Template } from '../lib/db'
+  import { db, type Category, type CatType, type Siklus, type Template } from '../lib/db'
   import { fmt } from '../lib/format'
   import { t, i18n, setLang } from '../lib/i18n.svelte'
   import { reloadAll, store, factoryReset, type SettingsPage } from '../lib/store.svelte'
@@ -9,6 +9,7 @@
     { go: 'ekspor', label: 'export_import' },
     { go: 'pintasan', label: 'pintasan' },
     { go: 'kategori', label: 'category' },
+    { go: 'siklus', label: 'siklus' },
     { go: 'tentang', label: 'about' },
   ]
 
@@ -17,6 +18,8 @@
   let tplName = $state('')
   let tplAmount = $state(0)
   let tplCat = $state('c_lain')
+  /** '' means no siklus — keeps the <select> happy. */
+  let tplSiklusId = $state('')
 
   function openTplForm(tpl?: Template): void {
     if (tpl) {
@@ -24,19 +27,21 @@
       tplName = tpl.name
       tplAmount = tpl.amount
       tplCat = tpl.catId
+      tplSiklusId = tpl.siklusId ?? ''
     } else {
       const fallback = store.categories.find((c) => c.id === 'c_lain') ?? store.categories[0]
       tplEditId = null
       tplName = ''
       tplAmount = 0
       tplCat = fallback?.id ?? ''
+      tplSiklusId = ''
     }
     store.settingsPage = 'pintasan-form'
   }
 
   async function saveTpl(): Promise<void> {
     if (!tplName.trim() || tplAmount <= 0 || !tplCat) return
-    await db.templates.put({
+    const row: Template = {
       id: tplEditId ?? 't' + Date.now(),
       name: tplName.trim(),
       amount: tplAmount,
@@ -44,7 +49,9 @@
       order: tplEditId
         ? store.templates.find((x) => x.id === tplEditId)?.order ?? store.templates.length
         : store.templates.length,
-    })
+    }
+    if (tplSiklusId) row.siklusId = tplSiklusId
+    await db.templates.put(row)
     await reloadAll()
     store.settingsPage = 'pintasan'
     showToast('✓ ' + t(tplEditId ? 'tpl_updated' : 'tpl_created'))
@@ -62,6 +69,12 @@
   }
   function tplCatEmoji(catId: string): string {
     return store.categories.find((c) => c.id === catId)?.emoji ?? '📦'
+  }
+  function siklusName(id: string): string {
+    return store.siklus.find((s) => s.id === id)?.name ?? ''
+  }
+  function taggedCount(id: string): number {
+    return store.transactions.filter((x) => x.siklusId === id).length
   }
 
   // ---- reorder via grip drag (pointer-based, works on touch) ----
@@ -175,6 +188,61 @@
     showToast('✓ ' + t('cat_deleted'))
   }
 
+  // ---- siklus ----
+  const SIKLUS_PALETTE = ['🔁', '💧', '⚡', '💇', '🛒', '🧴', '🍚', '⛽', '📱', '🧾', '💊', '🧻', '🚰', '🐾', '🎁', '📦']
+
+  let sklEditId = $state<string | null>(null)
+  let sklName = $state('')
+  let sklEmoji = $state('🔁')
+
+  function openSiklusForm(s?: Siklus): void {
+    sklEditId = s?.id ?? null
+    sklName = s?.name ?? ''
+    sklEmoji = s?.emoji ?? '🔁'
+    store.settingsPage = 'siklus-form'
+  }
+
+  async function saveSiklus(): Promise<void> {
+    if (!sklName.trim()) return
+    const existing = sklEditId ? store.siklus.find((x) => x.id === sklEditId) : undefined
+    await db.siklus.put({
+      id: sklEditId ?? 's' + Date.now(),
+      name: sklName.trim(),
+      emoji: sklEmoji.trim() || '🔁', // fallback if user cleared the field
+      order: existing?.order ?? store.siklus.length,
+    })
+    await reloadAll()
+    store.settingsPage = 'siklus'
+    showToast('✓ ' + t(sklEditId ? 'siklus_updated' : 'siklus_created'))
+  }
+
+  async function persistSiklusOrder(list: Siklus[]): Promise<void> {
+    await db.siklus.bulkPut(list.map((x, i) => ({ ...x, order: i })))
+    await reloadAll()
+  }
+
+  function onDropSkl(from: number, to: number): void {
+    const list = [...store.siklus]
+    const [moved] = list.splice(from, 1)
+    list.splice(to, 0, moved)
+    void persistSiklusOrder(list)
+  }
+
+  /** Deleting a tag untags shortcuts; tagged transactions are kept as-is. */
+  async function delSiklus(id: string): Promise<void> {
+    if (!confirm(t('siklus_delete'))) return
+    const tagged = store.templates.filter((x) => x.siklusId === id)
+    await db.transaction('rw', db.siklus, db.templates, async () => {
+      await db.siklus.delete(id)
+      if (tagged.length) {
+        await db.templates.bulkPut(tagged.map((x) => ({ ...x, siklusId: undefined })))
+      }
+    })
+    await reloadAll()
+    await persistSiklusOrder(store.siklus) // renumber after delete
+    showToast('✓ ' + t('siklus_deleted'))
+  }
+
   // ---- ekspor / impor ----
   function download(filename: string, mime: string, content: string): void {
     const url = URL.createObjectURL(new Blob([content], { type: mime }))
@@ -211,6 +279,7 @@
       categories: store.categories,
       templates: store.templates,
       transactions: store.transactions,
+      siklus: store.siklus,
     }
     download('catatan-keuangan.json', 'application/json', JSON.stringify(data, null, 2))
   }
@@ -221,7 +290,7 @@
     input.value = '' // allow re-selecting the same file
     if (!file) return
     if (!confirm(t('import_confirm'))) return
-    let data: { categories?: Category[]; templates?: unknown[]; transactions?: unknown[] }
+    let data: { categories?: Category[]; templates?: unknown[]; transactions?: unknown[]; siklus?: unknown[] }
     try {
       data = JSON.parse(await file.text())
     } catch {
@@ -229,9 +298,13 @@
       return
     }
     if (!Array.isArray(data.transactions)) { alert('JSON tidak valid'); return }
-    await db.transaction('rw', db.categories, db.templates, db.transactions, async () => {
-      await Promise.all([db.categories.clear(), db.templates.clear(), db.transactions.clear()])
+    await db.transaction('rw', db.categories, db.templates, db.transactions, db.siklus, async () => {
+      await Promise.all([
+        db.categories.clear(), db.templates.clear(), db.transactions.clear(), db.siklus.clear(),
+      ])
       if (data.categories) await db.categories.bulkPut(data.categories)
+      // older backups have no siklus array — they simply import untagged
+      if (data.siklus) await db.siklus.bulkPut(data.siklus as never[])
       if (data.templates) await db.templates.bulkPut(data.templates as never[])
       await db.transactions.bulkPut(data.transactions as never[])
     })
@@ -245,6 +318,7 @@
   function back(): void {
     if (store.settingsPage === 'pintasan-form') store.settingsPage = 'pintasan'
     else if (store.settingsPage === 'kategori-form') store.settingsPage = 'kategori'
+    else if (store.settingsPage === 'siklus-form') store.settingsPage = 'siklus'
     else store.settingsPage = 'index'
   }
 </script>
@@ -278,6 +352,8 @@
         {:else if store.settingsPage === 'pintasan-form'}{tplEditId ? t('edit') : t('add_pintasan')}
         {:else if store.settingsPage === 'kategori'}{t('category')}
         {:else if store.settingsPage === 'kategori-form'}{catEditId ? t('edit') : t('add_category')}
+        {:else if store.settingsPage === 'siklus'}{t('siklus')}
+        {:else if store.settingsPage === 'siklus-form'}{sklEditId ? t('edit') : t('add_siklus')}
         {:else if store.settingsPage === 'ekspor'}{t('export_import')}
         {:else}{t('about')}{/if}
       </h1>
@@ -293,7 +369,7 @@
           <span class="ico">{tplCatEmoji(tpl.catId)}</span>
           <span class="meta">
             <span class="n">{tpl.name}</span>
-            <span class="c">{tplCatName(tpl.catId)} · {fmt(tpl.amount)}</span>
+            <span class="c">{tplCatName(tpl.catId)} · {fmt(tpl.amount)}{tpl.siklusId ? ' · ' + siklusName(tpl.siklusId) : ''}</span>
           </span>
           <button class="row-btn" title={t('edit')} onclick={() => openTplForm(tpl)}>✏️</button>
           <button class="row-btn" onclick={() => delTpl(tpl.id)}>🗑️</button>
@@ -317,6 +393,16 @@
           <option value={c.id}>{c.emoji} {c.name}</option>
         {/each}
       </select>
+
+      {#if store.siklus.length}
+        <div class="label">{t('siklus_pre')}</div>
+        <select class="f-input" bind:value={tplSiklusId}>
+          <option value="">— {t('siklus_none')}</option>
+          {#each store.siklus as s (s.id)}
+            <option value={s.id}>{s.name}</option>
+          {/each}
+        </select>
+      {/if}
 
       <div class="form-actions">
         <button class="btn ghost" onclick={() => go('pintasan')}>{t('cancel')}</button>
@@ -378,6 +464,46 @@
         <button class="btn slim" disabled={!catName_.trim()} onclick={saveCat}>{t('save')}</button>
       </div>
       <div class="preview muted small">{catEmoji} <b>{catName_ || '…'}</b></div>
+    </div>
+  {:else if store.settingsPage === 'siklus'}
+    <p class="muted small">{t('siklus_sub')}</p>
+    <p class="muted small hint-drag">⠿ = {i18n.lang === 'id' ? 'seret untuk mengurutkan' : 'drag to reorder'}</p>
+    <div class="list">
+      {#each store.siklus as s, idx (s.id)}
+        <div class="item siklus-row" class:over={overIdx === idx}>
+          <span class="grip" role="button" tabindex="-1" aria-label="Drag to reorder" onpointerdown={(e) => startDrag(e, idx, store.siklus.length, onDropSkl)}>⠿</span>
+          <span class="ico">{s.emoji}</span>
+          <span class="meta">
+            <span class="n">{s.name}</span>
+            <span class="c">{taggedCount(s.id)}{t('siklus_times')}</span>
+          </span>
+          <button class="row-btn" title={t('edit')} onclick={() => openSiklusForm(s)}>✏️</button>
+          <button class="row-btn" onclick={() => delSiklus(s.id)}>🗑️</button>
+        </div>
+      {:else}
+        <div class="empty">{t('empty_siklus')}</div>
+      {/each}
+    </div>
+    <button class="btn ghost" onclick={() => openSiklusForm()}>+ {t('add_siklus')}</button>
+  {:else if store.settingsPage === 'siklus-form'}
+    <div class="form-page">
+      <div class="label">{t('name')}</div>
+      <input class="f-input" type="text" maxlength="30" bind:value={sklName} placeholder={t('name')} />
+
+      <div class="label">{t('icon')}</div>
+      <input class="f-input emoji-input" type="text" maxlength="8" bind:value={sklEmoji} placeholder="🔁" />
+      <p class="muted small" style="margin:6px 0 0">{t('icon_hint')}</p>
+      <div class="palette">
+        {#each SIKLUS_PALETTE as em (em)}
+          <button class="pal" class:picked={sklEmoji === em} onclick={() => (sklEmoji = em)}>{em}</button>
+        {/each}
+      </div>
+
+      <div class="form-actions">
+        <button class="btn ghost" onclick={() => go('siklus')}>{t('cancel')}</button>
+        <button class="btn slim" disabled={!sklName.trim()} onclick={saveSiklus}>{t('save')}</button>
+      </div>
+      <div class="preview muted small">{sklEmoji} <b>{sklName || '…'}</b></div>
     </div>
   {:else if store.settingsPage === 'ekspor'}
     <div class="menu">

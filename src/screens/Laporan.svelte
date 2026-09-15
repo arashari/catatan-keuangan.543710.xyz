@@ -13,6 +13,8 @@
     inPer: boolean
     inc: number
     exp: number
+    /** Emoji of every siklus tagged that day. */
+    siklus: string[]
   }
 
   function period(): { start: Date; end: Date } {
@@ -58,6 +60,7 @@
   /** Calendar weeks covering the period; days outside are dimmed. */
   const calendar = $derived.by(() => {
     const { start, end } = period()
+    const emojiBySiklus = new Map(store.siklus.map((s) => [s.id, s.emoji]))
     const cursor = new Date(start)
     cursor.setDate(cursor.getDate() - cursor.getDay()) // back to Sunday
     const cells: DayCell[] = []
@@ -68,11 +71,14 @@
         const iso = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()
         let inc = 0
         let exp = 0
+        const marks = new Set<string>()
         for (const x of store.transactions) {
           const xd = new Date(x.ts)
           if (xd.getFullYear() !== d.getFullYear() || xd.getMonth() !== d.getMonth() || xd.getDate() !== d.getDate()) continue
           if (x.type === 'income') inc += x.amount
           else exp += x.amount
+          const em = x.siklusId ? emojiBySiklus.get(x.siklusId) : undefined
+          if (em) marks.add(em)
         }
         cells.push({
           key: iso,
@@ -80,6 +86,7 @@
           inPer: d >= start && d <= end,
           inc,
           exp,
+          siklus: [...marks],
         })
         cursor.setDate(cursor.getDate() + 1)
       }
@@ -166,6 +173,9 @@
         <div class="dn">{cell.day}</div>
         {#if cell.inc}<div class="inc">+{fmtShort(cell.inc)}</div>{/if}
         {#if cell.exp}<div class="exp">-{fmtShort(cell.exp)}</div>{/if}
+        {#if cell.siklus.length}
+          <div class="csiklus">{#each cell.siklus as em (em)}{em}{/each}</div>
+        {/if}
       </div>
     {/each}
   </div>

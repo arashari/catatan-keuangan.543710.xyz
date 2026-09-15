@@ -12,11 +12,23 @@ export interface Category {
   order: number
 }
 
+/** A recurring purchase worth tracking — "galon air", "token listrik".
+ *  A tag on a transaction, not a property of a shortcut: a shortcut may
+ *  pre-tag one, but a siklus exists on its own. */
+export interface Siklus {
+  id: string
+  name: string
+  emoji: string
+  order: number
+}
+
 export interface Template {
   id: string
   name: string
   amount: number
   catId: string
+  /** Optional siklus this shortcut pre-tags when tapped. */
+  siklusId?: string
   order: number
 }
 
@@ -30,6 +42,8 @@ export interface Transaction {
   ts: number
   /** Wall-clock creation time — used to order same-day entries. */
   created?: number
+  /** Optional siklus tag, for recurring-purchase tracking. */
+  siklusId?: string
 }
 
 export interface Setting {
@@ -41,6 +55,7 @@ export const db = new Dexie('catatan-keuangan') as Dexie & {
   categories: EntityTable<Category, 'id'>
   templates: EntityTable<Template, 'id'>
   transactions: EntityTable<Transaction, 'id'>
+  siklus: EntityTable<Siklus, 'id'>
   settings: EntityTable<Setting, 'key'>
 }
 
@@ -48,6 +63,19 @@ db.version(1).stores({
   categories: 'id, order',
   templates: 'id, order',
   transactions: 'id, ts, catId',
+  settings: 'key',
+})
+
+// v2: siklus tags. The new object store is the only schema change — siklusId
+// on templates/transactions is unindexed, so it rides along for free.
+// Every store is re-declared so the upgrade can never drop an existing one;
+// re-declaring an identical schema is a no-op, and no .upgrade() callback
+// touches old rows. Opening a v1 database therefore keeps all its data.
+db.version(2).stores({
+  categories: 'id, order',
+  templates: 'id, order',
+  transactions: 'id, ts, catId',
+  siklus: 'id, order',
   settings: 'key',
 })
 
@@ -112,6 +140,12 @@ export async function ensureSeeded(): Promise<void> {
     )
   }
 
+  // v2: siklus emoji arrived after the table did — give old rows a fallback
+  const noEmoji = (await db.siklus.toArray()).filter((s) => !s.emoji)
+  if (noEmoji.length) {
+    await db.siklus.bulkPut(noEmoji.map((s) => ({ ...s, emoji: '🔁' })))
+  }
+
   const count = await db.categories.count()
   if (count > 0) return
   await seedDefaults()
@@ -119,8 +153,13 @@ export async function ensureSeeded(): Promise<void> {
 
 /** Factory reset: wipe everything, then restore default categories & shortcuts. */
 export async function resetToDefaults(): Promise<void> {
-  await db.transaction('rw', [db.categories, db.templates, db.transactions], async () => {
-    await Promise.all([db.categories.clear(), db.templates.clear(), db.transactions.clear()])
+  await db.transaction('rw', [db.categories, db.templates, db.transactions, db.siklus], async () => {
+    await Promise.all([
+      db.categories.clear(),
+      db.templates.clear(),
+      db.transactions.clear(),
+      db.siklus.clear(),
+    ])
   })
   await seedDefaults()
 }

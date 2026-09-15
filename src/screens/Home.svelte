@@ -35,6 +35,8 @@
       note: tpl.name,
       ts,
       created: Date.now(),
+      // carry the shortcut's siklus so the purchase counts toward its cycle
+      ...(tpl.siklusId ? { siklusId: tpl.siklusId } : {}),
     })
     await reloadAll()
     showToast('✓ ' + tpl.name + ' · ' + fmt(tpl.amount))

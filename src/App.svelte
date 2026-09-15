@@ -5,6 +5,7 @@ import { cubicOut } from 'svelte/easing'
   import Home from './screens/Home.svelte'
   import Transaksi from './screens/Transaksi.svelte'
   import Laporan from './screens/Laporan.svelte'
+  import Siklus from './screens/Siklus.svelte'
   import Pengaturan from './screens/Pengaturan.svelte'
   import InputScreen from './screens/InputScreen.svelte'
   import ToastView from './lib/ToastView.svelte'
@@ -19,6 +20,7 @@ import { cubicOut } from 'svelte/easing'
     { id: 'home', icon: '🏠', label: 'nav_home' },
     { id: 'trans', icon: '📋', label: 'nav_trans' },
     { id: 'report', icon: '📊', label: 'nav_report' },
+    { id: 'siklus', icon: '🔁', label: 'nav_siklus' },
     { id: 'data', icon: '⚙️', label: 'nav_settings' },
   ]
 </script>
@@ -33,6 +35,8 @@ import { cubicOut } from 'svelte/easing'
           <Transaksi />
         {:else if store.screen === 'report'}
           <Laporan />
+        {:else if store.screen === 'siklus'}
+          <Siklus />
         {:else}
           <Pengaturan />
         {/if}
