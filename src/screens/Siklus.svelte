@@ -4,15 +4,12 @@
     fmtDaysAgo, fmtInDays, fmtEvery, fmtLate, fmtFaster, fmtSlower,
   } from '../lib/format'
   import { t } from '../lib/i18n.svelte'
-  import { loadTx, store } from '../lib/store.svelte'
+  import { loadTx, store, openSiklusDetail, closeSiklusDetail } from '../lib/store.svelte'
   import { siklusHistory, siklusStats } from '../lib/siklus'
-
-  /** Set while one siklus' history is open; the list is the default view. */
-  let detailId = $state<string | null>(null)
 
   const stats = $derived(siklusStats(store.siklus, store.transactions))
   // falls back to the list page once the last tagged purchase is deleted
-  const detail = $derived(stats.find((s) => s.siklus.id === detailId) ?? null)
+  const detail = $derived(stats.find((s) => s.siklus.id === store.siklusDetail) ?? null)
 
   /** Newest first, each row carrying the measured gap to the one before it. */
   const rows = $derived(detail ? siklusHistory(store.transactions, detail.siklus.id) : [])
@@ -22,7 +19,7 @@
 <main class="screen">
   {#if detail}
     <div class="subhead">
-      <button class="subback" onclick={() => (detailId = null)}>‹</button>
+      <button class="subback" onclick={closeSiklusDetail}>‹</button>
       <h1>{detail.siklus.emoji} {detail.siklus.name}</h1>
     </div>
 
@@ -70,7 +67,7 @@
       <div class="list">
         {#each stats as st (st.siklus.id)}
           <button class="skl" class:due={st.daysLeft != null && st.daysLeft < 0}
-            onclick={() => (detailId = st.siklus.id)}>
+            onclick={() => openSiklusDetail(st.siklus.id)}>
             <span class="skl-top">
               <span class="n">{st.siklus.emoji} {st.siklus.name}</span>
               <span class="skl-right">

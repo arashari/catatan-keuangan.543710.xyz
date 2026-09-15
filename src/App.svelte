@@ -9,7 +9,7 @@ import { cubicOut } from 'svelte/easing'
   import Pengaturan from './screens/Pengaturan.svelte'
   import InputScreen from './screens/InputScreen.svelte'
   import ToastView from './lib/ToastView.svelte'
-  import { initApp, store, type Screen } from './lib/store.svelte'
+  import { initApp, goScreen, store, type Screen } from './lib/store.svelte'
   import { t } from './lib/i18n.svelte'
   import { applyTheme, initialTheme } from './lib/theme'
 
@@ -45,7 +45,7 @@ import { cubicOut } from 'svelte/easing'
 
     <nav class="bottomnav">
       {#each NAV as n (n.id)}
-        <button class:active={store.screen === n.id} onclick={() => (store.screen = n.id)}>
+        <button class:active={store.screen === n.id} onclick={() => goScreen(n.id)}>
           <span class="ic">{n.icon}</span><span>{t(n.label)}</span>
         </button>
       {/each}

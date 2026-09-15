@@ -63,6 +63,7 @@ src/
     i18n.svelte.ts        # id/en dictionaries and `t()`
     format.ts             # currency, date, cut-off period, and duration helpers
     siklus.ts             # pure stats engine for recurring purchases
+    history.ts            # back-gesture handling, view model + History API
     AmountPad.svelte      # type toggle + keypad, shared by input & shortcut forms
     CatPicker.svelte      # category chips + siklus tags, shared likewise
     theme.ts              # light/dark persistence
@@ -118,6 +119,26 @@ The database is at version 2 (version 1 + the `siklus` store). Each version's
 needed no version bump — old rows simply lack the field and read as untagged.
 Old JSON backups import fine: a missing `siklus` array just means nothing is
 tagged.
+
+## Back navigation
+
+There is no router; the visible screen lives in `store` (`screen`,
+`settingsPage`, `siklusDetail`, `inputOpen`). An installed PWA is closed by the
+system back gesture the moment it runs out of history, so `src/lib/history.ts`
+pushes a history entry for every in-app step — tab switch, settings sub-page,
+siklus detail, opening the input form — and restores the matching view on
+`popstate`.
+
+At the root there is nothing left to unwind, so back leaves the app. That is
+deliberate: it is how the user gets out. Everything that closes programmatically
+(cancelling the form, saving a settings form, the detail page's back arrow) goes
+through `goBack()` instead of mutating state directly, which keeps the stack
+honest and makes the forward button work too. `normalizeView()` clamps a
+restored view so a settings sub-page or a siklus detail can never reopen on a
+screen it doesn't belong to.
+
+This is Android and desktop behaviour. A standalone iOS PWA has no system back
+gesture at all, so nothing there changes.
 
 ## Siklus
 

@@ -2,7 +2,8 @@
   import { db, type Category, type CatType, type Siklus, type Template, type TxType } from '../lib/db'
   import { fmt } from '../lib/format'
   import { t, i18n, setLang } from '../lib/i18n.svelte'
-  import { reloadAll, store, factoryReset, type SettingsPage } from '../lib/store.svelte'
+  import { reloadAll, store, factoryReset, goSettings, leaveSettings, type SettingsPage } from '../lib/store.svelte'
+  import { canGoBack, goBack } from '../lib/history'
   import { showToast } from '../lib/toast.svelte'
   import AmountPad from '../lib/AmountPad.svelte'
   import CatPicker from '../lib/CatPicker.svelte'
@@ -40,7 +41,7 @@
       tplSiklusId = null
       tplType = fallback?.type ?? 'expense'
     }
-    store.settingsPage = 'pintasan-form'
+    goSettings('pintasan-form')
   }
 
   /** Flipping the type drops a category that no longer belongs to it. */
@@ -64,7 +65,7 @@
     if (tplSiklusId) row.siklusId = tplSiklusId
     await db.templates.put(row)
     await reloadAll()
-    store.settingsPage = 'pintasan'
+    leaveSettings('pintasan')
     showToast('✓ ' + t(tplEditId ? 'tpl_updated' : 'tpl_created'))
   }
 
@@ -160,7 +161,7 @@
       catEmoji = '📦'
       catType = 'expense'
     }
-    store.settingsPage = 'kategori-form'
+    goSettings('kategori-form')
   }
 
   async function saveCat(): Promise<void> {
@@ -174,7 +175,7 @@
       order: existing?.order ?? store.categories.length,
     })
     await reloadAll()
-    store.settingsPage = 'kategori'
+    leaveSettings('kategori')
     showToast('✓ ' + t(catEditId ? 'cat_updated' : 'cat_created'))
   }
 
@@ -210,7 +211,7 @@
     sklEditId = s?.id ?? null
     sklName = s?.name ?? ''
     sklEmoji = s?.emoji ?? '🔁'
-    store.settingsPage = 'siklus-form'
+    goSettings('siklus-form')
   }
 
   async function saveSiklus(): Promise<void> {
@@ -223,7 +224,7 @@
       order: existing?.order ?? store.siklus.length,
     })
     await reloadAll()
-    store.settingsPage = 'siklus'
+    leaveSettings('siklus')
     showToast('✓ ' + t(sklEditId ? 'siklus_updated' : 'siklus_created'))
   }
 
@@ -323,13 +324,13 @@
   }
 
   function go(page: SettingsPage): void {
-    store.settingsPage = page
+    goSettings(page)
   }
 
+  // Back now means "unwind one history step", so it needs no mapping from
+  // page to parent — history already knows where the user came from.
   function back(): void {
-    if (store.settingsPage === 'pintasan-form') store.settingsPage = 'pintasan'
-    else if (store.settingsPage === 'kategori-form') store.settingsPage = 'kategori'
-    else if (store.settingsPage === 'siklus-form') store.settingsPage = 'siklus'
+    if (canGoBack()) goBack()
     else store.settingsPage = 'index'
   }
 </script>
