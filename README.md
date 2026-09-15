@@ -31,7 +31,8 @@ and imports are plain files you control.
 - **Pengaturan (Settings)**
   - Export to **CSV** (spreadsheets) or **JSON** (full backup)
   - Import a JSON backup (replaces all local data)
-  - Manage **shortcuts** — add, edit, delete, drag to reorder, optional siklus
+  - Manage **shortcuts** — add, edit, delete, drag to reorder, optional siklus.
+    Creating or editing one uses the same form as the transaction input screen.
   - Manage **categories** — custom emoji, expense/income type, drag to reorder
   - Manage **siklus** — name, emoji, add/edit/delete, drag to reorder
   - Reset data back to defaults
@@ -62,6 +63,8 @@ src/
     i18n.svelte.ts        # id/en dictionaries and `t()`
     format.ts             # currency, date, cut-off period, and duration helpers
     siklus.ts             # pure stats engine for recurring purchases
+    AmountPad.svelte      # type toggle + keypad, shared by input & shortcut forms
+    CatPicker.svelte      # category chips + siklus tags, shared likewise
     theme.ts              # light/dark persistence
     toast.svelte.ts       # transient confirmation toasts
     swipe.ts              # touch swipe action for day/period navigation

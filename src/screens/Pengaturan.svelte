@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { db, type Category, type CatType, type Siklus, type Template } from '../lib/db'
+  import { db, type Category, type CatType, type Siklus, type Template, type TxType } from '../lib/db'
   import { fmt } from '../lib/format'
   import { t, i18n, setLang } from '../lib/i18n.svelte'
   import { reloadAll, store, factoryReset, type SettingsPage } from '../lib/store.svelte'
   import { showToast } from '../lib/toast.svelte'
+  import AmountPad from '../lib/AmountPad.svelte'
+  import CatPicker from '../lib/CatPicker.svelte'
 
   const MENU: Array<{ go: SettingsPage; label: string }> = [
     { go: 'ekspor', label: 'export_import' },
@@ -17,9 +19,9 @@
   let tplEditId = $state<string | null>(null)
   let tplName = $state('')
   let tplAmount = $state(0)
-  let tplCat = $state('c_lain')
-  /** '' means no siklus — keeps the <select> happy. */
-  let tplSiklusId = $state('')
+  let tplType = $state<TxType>('expense')
+  let tplCat = $state<string | null>('c_lain')
+  let tplSiklusId = $state<string | null>(null)
 
   function openTplForm(tpl?: Template): void {
     if (tpl) {
@@ -27,25 +29,34 @@
       tplName = tpl.name
       tplAmount = tpl.amount
       tplCat = tpl.catId
-      tplSiklusId = tpl.siklusId ?? ''
+      tplSiklusId = tpl.siklusId ?? null
+      tplType = store.categories.find((c) => c.id === tpl.catId)?.type ?? 'expense'
     } else {
       const fallback = store.categories.find((c) => c.id === 'c_lain') ?? store.categories[0]
       tplEditId = null
       tplName = ''
       tplAmount = 0
-      tplCat = fallback?.id ?? ''
-      tplSiklusId = ''
+      tplCat = fallback?.id ?? null
+      tplSiklusId = null
+      tplType = fallback?.type ?? 'expense'
     }
     store.settingsPage = 'pintasan-form'
   }
 
+  /** Flipping the type drops a category that no longer belongs to it. */
+  function pickTplType(next: TxType): void {
+    tplType = next
+    if (tplCat && store.categories.find((c) => c.id === tplCat)?.type !== next) tplCat = null
+  }
+
   async function saveTpl(): Promise<void> {
-    if (!tplName.trim() || tplAmount <= 0 || !tplCat) return
+    const catId = tplCat
+    if (!tplName.trim() || tplAmount <= 0 || !catId) return
     const row: Template = {
       id: tplEditId ?? 't' + Date.now(),
       name: tplName.trim(),
       amount: tplAmount,
-      catId: tplCat,
+      catId,
       order: tplEditId
         ? store.templates.find((x) => x.id === tplEditId)?.order ?? store.templates.length
         : store.templates.length,
@@ -381,38 +392,21 @@
     <button class="btn ghost" onclick={() => openTplForm()}>+ {t('add_pintasan')}</button>
   {:else if store.settingsPage === 'pintasan-form'}
     <div class="form-page">
-      <div class="label">{t('name')}</div>
-      <input class="f-input" type="text" maxlength="40" bind:value={tplName} placeholder={t('name')} />
+      <AmountPad type={tplType} bind:amount={tplAmount} onTypePick={pickTplType} />
 
-      <div class="label">{t('amount')}</div>
-      <input class="f-input" type="number" inputmode="numeric" min="0" bind:value={tplAmount} />
+      <CatPicker
+        type={tplType}
+        bind:catId={tplCat}
+        bind:siklusId={tplSiklusId}
+        categories={store.categories}
+        siklus={store.siklus}
+      />
 
-      <div class="label">{t('category')}</div>
-      <select class="f-input" bind:value={tplCat}>
-        {#each store.categories as c (c.id)}
-          <option value={c.id}>{c.emoji} {c.name}</option>
-        {/each}
-      </select>
+      <input class="note" type="text" maxlength="40" placeholder={t('name')} bind:value={tplName} />
 
-      {#if store.siklus.length}
-        <div class="label">{t('siklus_pre')}</div>
-        <select class="f-input" bind:value={tplSiklusId}>
-          <option value="">— {t('siklus_none')}</option>
-          {#each store.siklus as s (s.id)}
-            <option value={s.id}>{s.name}</option>
-          {/each}
-        </select>
-      {/if}
-
-      <div class="form-actions">
-        <button class="btn ghost" onclick={() => go('pintasan')}>{t('cancel')}</button>
-        <button class="btn slim" disabled={!tplName.trim() || tplAmount <= 0 || !tplCat} onclick={saveTpl}>
-          {t('save')}
-        </button>
-      </div>
-      <div class="preview muted small">
-        {tplCatEmoji(tplCat)} <b>{tplName || '…'}</b> · {fmt(tplAmount)}
-      </div>
+      <button class="btn" disabled={!tplName.trim() || tplAmount <= 0 || !tplCat} onclick={saveTpl}>
+        {t('save')}
+      </button>
     </div>
   {:else if store.settingsPage === 'kategori'}
     <p class="muted small hint-drag">⠿ = {i18n.lang === 'id' ? 'seret untuk mengurutkan' : 'drag to reorder'}</p>

@@ -216,6 +216,7 @@ section.pintasan { min-height: 30dvh; }
   background: var(--chip); color: var(--accent); border: 1px solid var(--line);
 }
 .btn.ghost.danger { color: var(--expense); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .hint { text-align: center; margin: 12px 0 0; cursor: pointer; }
 
 /* period nav & trans date header */
