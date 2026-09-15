@@ -1,47 +1,122 @@
-# Svelte + TS + Vite
+# Catatan Keuangan
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+A local-first PWA for tracking daily income and expenses — one tap to record, a
+clear per-day and per-period view, no accounts and no server.
 
-## Recommended IDE Setup
+**Live:** <https://catatan-keuangan.543710.xyz>
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+All data lives in the browser (IndexedDB). Nothing is uploaded anywhere; exports
+and imports are plain files you control.
 
-## Need an official Svelte framework?
+## Features
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+- **Beranda (Home)** — running balance with income/expense totals, one-tap
+  shortcuts (*pintasan*) that record a routine expense instantly, and the most
+  recent transactions. Light/dark toggle.
+- **Transaksi** — transactions grouped by day. Move between days with the
+  arrows, a date picker, or a horizontal swipe. Each day shows its own in/out
+  totals. Tap any entry to edit it; the `+` button adds a new one.
+- **Laporan (Report)** — configurable **cut-off date** (a "month" can run from
+  the 25th to the 24th, like a payroll period). Navigate periods by month or
+  year, see balance/in/out, an expense bar chart by category, and a calendar
+  with per-day amounts.
+- **Input** — expense/income switch, numeric keypad, date, category, optional
+  note, save and delete.
+- **Pengaturan (Settings)**
+  - Export to **CSV** (spreadsheets) or **JSON** (full backup)
+  - Import a JSON backup (replaces all local data)
+  - Manage **shortcuts** — add, edit, delete, drag to reorder
+  - Manage **categories** — custom emoji, expense/income type, drag to reorder
+  - Reset data back to defaults
+  - Language: **Indonesian / English**
 
-## Technical considerations
+## Tech stack
 
-**Why use this over SvelteKit?**
+| Area | Choice |
+| --- | --- |
+| UI | [Svelte 5](https://svelte.dev/) (runes) + TypeScript |
+| Build | [Vite 8](https://vite.dev/) |
+| Storage | [Dexie 4](https://dexie.org/) over IndexedDB |
+| PWA | [`vite-plugin-pwa`](https://vite-pwa-org.netlify.app/) (auto-update service worker) |
+| Hosting | Cloudflare Workers static assets |
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+No backend, no runtime dependencies beyond Dexie.
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+## Project structure
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+```
+src/
+  App.svelte              # shell, bottom nav, screen switching, input overlay
+  app.css                 # design tokens (light/dark) and all component styles
+  main.ts                 # app entry
+  lib/
+    db.ts                 # Dexie schema, default seed data, migrations, reset
+    store.svelte.ts       # global reactive state + all mutations/actions
+    i18n.svelte.ts        # id/en dictionaries and `t()`
+    format.ts             # currency, date, and cut-off period helpers
+    theme.ts              # light/dark persistence
+    toast.svelte.ts       # transient confirmation toasts
+    swipe.ts              # touch swipe action for day/period navigation
+  screens/
+    Home.svelte           # balance, shortcuts, recent list
+    Transaksi.svelte      # per-day transactions
+    Laporan.svelte        # periodic report + calendar
+    InputScreen.svelte    # add/edit form
+    Pengaturan.svelte     # settings, exports, shortcuts, categories
+```
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+## Getting started
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+```bash
+npm install
+npm run dev      # http://localhost:5173
+```
 
-**Why include `.vscode/extensions.json`?**
+### Scripts
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serve the built output locally |
+| `npm run check` | `svelte-check` + `tsc` type checks |
 
-**Why enable `allowJs` in the TS template?**
+## Data model
 
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
+Stored in the IndexedDB database `catatan-keuangan` (four tables):
 
-**Why is HMR not preserving my local component state?**
+- `categories` — `{ id, name, emoji, type: 'expense' | 'income', order }`
+- `templates` — shortcuts: `{ id, name, amount, catId, order }`
+- `transactions` — `{ id, type, amount, catId, note, ts, created }`.
+  `ts` is normalized to **noon of the business day** so ordering within a day is
+  decided purely by `created` (the wall-clock time the entry was made).
+- `settings` — key/value, currently just `cutDate`
 
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
+Default categories and a few shortcuts are seeded on first run. `ensureSeeded()`
+in `src/lib/db.ts` also runs one-off migrations (legacy `both` categories,
+backfilling `created`, re-normalizing `ts`).
 
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
+## PWA
 
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+The build registers a service worker with `autoUpdate`, so installed clients pick
+up new versions automatically. The web app manifest declares three **app
+shortcuts** that deep-link into the app; the URLs are cleaned after launch so a
+reload doesn't re-trigger them:
+
+- `/?action=record&type=expense` — record an expense
+- `/?action=record&type=income` — record an income
+- `/?screen=report` — open the report
+
+The About screen shows the short git commit hash the bundle was built from
+(injected as `__APP_COMMIT__` by `vite.config.ts`).
+
+## Deploy
+
+Static output, deployed to a Cloudflare Worker serving `./dist` as assets with
+SPA fallback (see `wrangler.jsonc`). The custom domain is configured in the
+route.
+
+```bash
+npm run build
+npx wrangler deploy
 ```
