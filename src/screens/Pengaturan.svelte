@@ -13,7 +13,6 @@
   ]
 
   // ---- pintasan ----
-  let showTplForm = $state(false)
   let tplEditId = $state<string | null>(null)
   let tplName = $state('')
   let tplAmount = $state(0)
@@ -32,7 +31,7 @@
       tplAmount = 0
       tplCat = fallback?.id ?? ''
     }
-    showTplForm = true
+    store.settingsPage = 'pintasan-form'
   }
 
   async function saveTpl(): Promise<void> {
@@ -47,7 +46,7 @@
         : store.templates.length,
     })
     await reloadAll()
-    showTplForm = false
+    store.settingsPage = 'pintasan'
     showToast('✓ ' + t(tplEditId ? 'tpl_updated' : 'tpl_created'))
   }
 
@@ -120,7 +119,6 @@
   // ---- kategori (drag & drop) ----
   const EMOJI_PALETTE = ['🍜', '🚌', '🛒', '🧾', '🎮', '💊', '💼', '🏠', '📚', '🎁', '☕', '⛽', '📱', '🐾', '✈️', '📦']
 
-  let showCatForm = $state(false)
   let catEditId = $state<string | null>(null)
   let catName_ = $state('')
   let catEmoji = $state('📦')
@@ -138,7 +136,7 @@
       catEmoji = '📦'
       catType = 'expense'
     }
-    showCatForm = true
+    store.settingsPage = 'kategori-form'
   }
 
   async function saveCat(): Promise<void> {
@@ -152,7 +150,7 @@
       order: existing?.order ?? store.categories.length,
     })
     await reloadAll()
-    showCatForm = false
+    store.settingsPage = 'kategori'
     showToast('✓ ' + t(catEditId ? 'cat_updated' : 'cat_created'))
   }
 
@@ -242,8 +240,12 @@
 
   function go(page: SettingsPage): void {
     store.settingsPage = page
-    showTplForm = false
-    showCatForm = false
+  }
+
+  function back(): void {
+    if (store.settingsPage === 'pintasan-form') store.settingsPage = 'pintasan'
+    else if (store.settingsPage === 'kategori-form') store.settingsPage = 'kategori'
+    else store.settingsPage = 'index'
   }
 </script>
 
@@ -270,10 +272,12 @@
     <button class="btn ghost danger" onclick={() => void factoryReset()}>{t('reset_data')}</button>
   {:else}
     <div class="subhead">
-      <button class="subback" onclick={() => go('index')}>‹</button>
+      <button class="subback" onclick={back}>‹</button>
       <h1>
         {#if store.settingsPage === 'pintasan'}{t('pintasan')}
+        {:else if store.settingsPage === 'pintasan-form'}{tplEditId ? t('edit') : t('add_pintasan')}
         {:else if store.settingsPage === 'kategori'}{t('category')}
+        {:else if store.settingsPage === 'kategori-form'}{catEditId ? t('edit') : t('add_category')}
         {:else if store.settingsPage === 'ekspor'}{t('export_import')}
         {:else}{t('about')}{/if}
       </h1>
@@ -281,34 +285,6 @@
   {/if}
 
   {#if store.settingsPage === 'pintasan'}
-    {#if showTplForm}
-      <div class="form-card">
-        <div class="form-title">{tplEditId ? t('edit') : '+ ' + t('add_pintasan')}</div>
-        <div class="label">{t('name')}</div>
-        <input class="f-input" type="text" maxlength="40" bind:value={tplName} placeholder={t('name')} />
-
-        <div class="label">{t('amount')}</div>
-        <input class="f-input" type="number" inputmode="numeric" min="0" bind:value={tplAmount} />
-
-        <div class="label">{t('category')}</div>
-        <select class="f-input" bind:value={tplCat}>
-          {#each store.categories as c (c.id)}
-            <option value={c.id}>{c.emoji} {c.name}</option>
-          {/each}
-        </select>
-
-        <div class="form-actions">
-          <button class="btn ghost" onclick={() => (showTplForm = false)}>{t('cancel')}</button>
-          <button class="btn slim" disabled={!tplName.trim() || tplAmount <= 0 || !tplCat} onclick={saveTpl}>
-            {t('save')}
-          </button>
-        </div>
-        <div class="preview muted small">
-          {tplCatEmoji(tplCat)} <b>{tplName || '…'}</b> · {fmt(tplAmount)}
-        </div>
-      </div>
-    {/if}
-
     <p class="muted small hint-drag">⠿ = {i18n.lang === 'id' ? 'seret untuk mengurutkan' : 'drag to reorder'}</p>
     <div class="list">
       {#each store.templates as tpl, idx (tpl.id)}
@@ -326,47 +302,33 @@
         <div class="empty">{t('empty_tpl_type')}</div>
       {/each}
     </div>
-    {#if !showTplForm}
-      <button class="btn ghost" onclick={() => openTplForm()}>+ {t('add_pintasan')}</button>
-    {/if}
-  {:else if store.settingsPage === 'kategori'}
-    {#if showCatForm}
-      <div class="form-card">
-        <div class="form-title">{catEditId ? t('edit') : '+ ' + t('add_category')}</div>
-        <div class="label">{t('name')}</div>
-        <input class="f-input" type="text" maxlength="30" bind:value={catName_} placeholder={t('name')} />
+    <button class="btn ghost" onclick={() => openTplForm()}>+ {t('add_pintasan')}</button>
+  {:else if store.settingsPage === 'pintasan-form'}
+    <div class="form-page">
+      <div class="label">{t('name')}</div>
+      <input class="f-input" type="text" maxlength="40" bind:value={tplName} placeholder={t('name')} />
 
-        <div class="label">{t('icon')}</div>
-        <input
-          class="f-input emoji-input"
-          type="text"
-          maxlength="8"
-          bind:value={catEmoji}
-          placeholder="😀"
-        />
-        <p class="muted small" style="margin:6px 0 0">{t('icon_hint')}</p>
-        <div class="palette">
-          {#each EMOJI_PALETTE as em (em)}
-            <button class="pal" class:picked={catEmoji === em} onclick={() => (catEmoji = em)}>{em}</button>
-          {/each}
-        </div>
+      <div class="label">{t('amount')}</div>
+      <input class="f-input" type="number" inputmode="numeric" min="0" bind:value={tplAmount} />
 
-        <div class="label">{t('category')}</div>
-        <div class="seg">
-          <button class:active={catType === 'expense'} class:exp={catType === 'expense'}
-            onclick={() => (catType = 'expense')}>{t('expense')}</button>
-          <button class:active={catType === 'income'} class:incseg={catType === 'income'}
-            onclick={() => (catType = 'income')}>{t('income')}</button>
-        </div>
+      <div class="label">{t('category')}</div>
+      <select class="f-input" bind:value={tplCat}>
+        {#each store.categories as c (c.id)}
+          <option value={c.id}>{c.emoji} {c.name}</option>
+        {/each}
+      </select>
 
-        <div class="form-actions">
-          <button class="btn ghost" onclick={() => (showCatForm = false)}>{t('cancel')}</button>
-          <button class="btn slim" disabled={!catName_.trim()} onclick={saveCat}>{t('save')}</button>
-        </div>
-        <div class="preview muted small">{catEmoji} <b>{catName_ || '…'}</b></div>
+      <div class="form-actions">
+        <button class="btn ghost" onclick={() => go('pintasan')}>{t('cancel')}</button>
+        <button class="btn slim" disabled={!tplName.trim() || tplAmount <= 0 || !tplCat} onclick={saveTpl}>
+          {t('save')}
+        </button>
       </div>
-    {/if}
-
+      <div class="preview muted small">
+        {tplCatEmoji(tplCat)} <b>{tplName || '…'}</b> · {fmt(tplAmount)}
+      </div>
+    </div>
+  {:else if store.settingsPage === 'kategori'}
     <p class="muted small hint-drag">⠿ = {i18n.lang === 'id' ? 'seret untuk mengurutkan' : 'drag to reorder'}</p>
     <div class="list">
       {#each store.categories as c, idx (c.id)}
@@ -382,9 +344,41 @@
         </div>
       {/each}
     </div>
-    {#if !showCatForm}
-      <button class="btn ghost" onclick={() => openCatForm()}>+ {t('add_category')}</button>
-    {/if}
+    <button class="btn ghost" onclick={() => openCatForm()}>+ {t('add_category')}</button>
+  {:else if store.settingsPage === 'kategori-form'}
+    <div class="form-page">
+      <div class="label">{t('name')}</div>
+      <input class="f-input" type="text" maxlength="30" bind:value={catName_} placeholder={t('name')} />
+
+      <div class="label">{t('icon')}</div>
+      <input
+        class="f-input emoji-input"
+        type="text"
+        maxlength="8"
+        bind:value={catEmoji}
+        placeholder="😀"
+      />
+      <p class="muted small" style="margin:6px 0 0">{t('icon_hint')}</p>
+      <div class="palette">
+        {#each EMOJI_PALETTE as em (em)}
+          <button class="pal" class:picked={catEmoji === em} onclick={() => (catEmoji = em)}>{em}</button>
+        {/each}
+      </div>
+
+      <div class="label">{t('category')}</div>
+      <div class="seg">
+        <button class:active={catType === 'expense'} class:exp={catType === 'expense'}
+          onclick={() => (catType = 'expense')}>{t('expense')}</button>
+        <button class:active={catType === 'income'} class:incseg={catType === 'income'}
+          onclick={() => (catType = 'income')}>{t('income')}</button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn ghost" onclick={() => go('kategori')}>{t('cancel')}</button>
+        <button class="btn slim" disabled={!catName_.trim()} onclick={saveCat}>{t('save')}</button>
+      </div>
+      <div class="preview muted small">{catEmoji} <b>{catName_ || '…'}</b></div>
+    </div>
   {:else if store.settingsPage === 'ekspor'}
     <div class="menu">
       <button class="action" onclick={exportCsv}><span class="txt">{t('export_csv')}</span><span class="chev">↓</span></button>

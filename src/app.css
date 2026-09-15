@@ -299,10 +299,6 @@ section.pintasan { min-height: 30dvh; }
 .del-btn, .row-btn {
   border: 0; background: none; font-size: 16px; cursor: pointer; opacity: 0.75;
 }
-.form-title {
-  font-size: 12px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.05em; padding-top: 12px;
-}
 .cat-row, .tpl-row { cursor: grab; }
 .cat-row.dragging, .tpl-row.dragging {
   opacity: 0.9;
@@ -371,12 +367,8 @@ section.pintasan { min-height: 30dvh; }
 }
 .about-text.ver { font-variant-numeric: tabular-nums; opacity: 0.7; }
 
-/* inline create forms (pintasan / kategori) */
-.form-card {
-  border: 1px solid var(--line); border-radius: 14px;
-  padding: 4px 14px 16px; margin-bottom: 14px; background: var(--chip);
-}
-.form-card .label { margin-top: 12px; }
+/* create/edit settings forms (pintasan / kategori) */
+.form-page { padding-bottom: 8px; }
 .f-input {
   width: 100%; border: 1px solid var(--line); background: var(--bg);
   color: var(--ink); border-radius: 10px; padding: 10px 12px;

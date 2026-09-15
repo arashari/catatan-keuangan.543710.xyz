@@ -5,7 +5,7 @@ import { showToast } from './toast.svelte'
 
 export type Screen = 'home' | 'trans' | 'report' | 'data'
 export type InputRet = 'home' | 'trans'
-export type SettingsPage = 'index' | 'pintasan' | 'kategori' | 'ekspor' | 'tentang'
+export type SettingsPage = 'index' | 'pintasan' | 'pintasan-form' | 'kategori' | 'kategori-form' | 'ekspor' | 'tentang'
 
 export const store = $state({
   ready: false,
