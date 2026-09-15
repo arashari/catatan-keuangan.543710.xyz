@@ -4,7 +4,7 @@ import { fmt } from './format'
 import { showToast } from './toast.svelte'
 
 export type Screen = 'home' | 'trans' | 'report' | 'siklus' | 'data'
-export type InputRet = 'home' | 'trans'
+export type InputRet = 'home' | 'trans' | 'siklus'
 export type SettingsPage = 'index' | 'pintasan' | 'pintasan-form' | 'kategori' | 'kategori-form' | 'siklus' | 'siklus-form' | 'ekspor' | 'tentang'
 
 export const store = $state({
@@ -188,7 +188,7 @@ export async function deleteCurrentTx(): Promise<void> {
   const ret = store.inputReturn
   cancelInput()
   // make sure the revealed screen matches where the user came from
-  store.screen = ret === 'trans' ? 'trans' : 'home'
+  store.screen = ret
   await reloadAll()
   showToast('✓ ' + t('tx_deleted'))
 }

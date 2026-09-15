@@ -23,7 +23,9 @@ and imports are plain files you control.
 - **Siklus** — its own tab. Track purchases whose *last* date is worth knowing
   (galon air, cukur rambut, token listrik). Tag a purchase with a siklus, either
   from the input form or by tapping a shortcut that has one pre-set, and the tab
-  shows when it's next expected. See [Siklus](#siklus) below.
+  shows when it's next expected. Tap a siklus to open its purchase history —
+  newest first, each row showing the measured gap since the previous purchase,
+  and tappable to edit like any other transaction. See [Siklus](#siklus) below.
 - **Input** — expense/income switch, numeric keypad, date, category, optional
   **siklus** tag, optional note, save and delete.
 - **Pengaturan (Settings)**
@@ -142,8 +144,10 @@ rather than inventing a date. A siklus with no tagged transactions shows
 nowhere. Deleting a siklus untags shortcuts but leaves transactions intact.
 
 Siklus are managed in **Pengaturan → Siklus** (name + emoji, drag to reorder);
-the **Siklus** tab is the read-only view of the stats above. The report calendar
-marks each day with the emoji of any siklus tagged that day.
+the **Siklus** tab is the read-only view of the stats above. Tapping a siklus
+opens its history: every tagged purchase newest-first, with the gap to the
+purchase before it and a total, so the cycle lengths are visible row by row. The
+report calendar marks each day with the emoji of any siklus tagged that day.
 
 ## PWA
 

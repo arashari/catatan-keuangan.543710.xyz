@@ -82,3 +82,20 @@ export function siklusStats(list: Siklus[], txs: Transaction[], now = new Date()
     (a, b) => (a.daysLeft ?? Infinity) - (b.daysLeft ?? Infinity) || b.lastTs - a.lastTs,
   )
 }
+
+export interface SiklusRow {
+  tx: Transaction
+  /** Days since the purchase before it; null for the first one, and for a
+   *  second purchase on the same day (a 0-day cycle is not a cycle). */
+  gap: number | null
+}
+
+/** One siklus' tagged purchases, newest first, each with its measured gap. */
+export function siklusHistory(txs: Transaction[], siklusId: string): SiklusRow[] {
+  const hits = txs.filter((x) => x.siklusId === siklusId).sort((a, b) => b.ts - a.ts)
+  return hits.map((tx, i) => {
+    const prev = hits[i + 1] // next in the array = the earlier purchase
+    const days = prev ? dayDiff(tx.ts, prev.ts) : 0
+    return { tx, gap: days > 0 ? days : null }
+  })
+}

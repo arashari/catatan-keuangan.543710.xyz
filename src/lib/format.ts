@@ -74,6 +74,12 @@ export function fmtEvery(n: number): string {
   return n === 1 ? 'every day' : 'every ' + n + ' days'
 }
 
+/** A bare duration — the measured gap between two purchases. */
+export function fmtDays(n: number): string {
+  if (i18n.lang === 'id') return n + ' hari'
+  return n === 1 ? '1 day' : n + ' days'
+}
+
 export function fmtLate(n: number): string {
   if (i18n.lang === 'id') return 'terlambat ' + n + ' hari'
   return n === 1 ? '1 day late' : n + ' days late'
